@@ -1,4 +1,5 @@
 name: Verify real production
+
 on:
   workflow_dispatch:
   deployment_status:
@@ -7,10 +8,15 @@ jobs:
   verify:
     if: github.event_name != 'deployment_status' || github.event.deployment_status.state == 'success'
     runs-on: ubuntu-latest
+
     steps:
       - uses: WU85745/ProdDoctor@main
         with:
           url: https://example.com
           expect: Example Domain
+          status: 200
           retries: 2
           timeout: 15000
+          check_assets: true
+          max_assets: 20
+          tls_warn_days: 14
