@@ -14,11 +14,13 @@
   <img src=".github/assets/proddoctor-hero.svg" alt="ProdDoctor - post-deploy production validation" width="100%">
 </p>
 
-**Post-deploy production validation for real websites.**
+**Post-deploy production validation that helps show you where production broke.**
 
-ProdDoctor checks the production environment your users actually reach after deployment. It does not stop at “Build passed” or “Deploy command succeeded”. It continues with DNS, HTTP, TLS, real page content, Cloudflare/WAF behavior, same-origin assets, and optional Chromium runtime validation.
+ProdDoctor checks the environment users actually reach after deployment. It does not stop at “Build passed” or “Deploy command succeeded”. It validates the real production path across DNS, HTTP, TLS, page content, same-origin assets, Cloudflare/WAF behavior, and optional Chromium runtime checks.
 
-> **A green CI run does not mean production is actually healthy.**
+When something fails, ProdDoctor does more than return a red check. It narrows the failure to the likely layer and preserves debugging evidence such as failed requests, screenshots, Playwright traces, and HTML/JSON reports.
+
+> **Your deploy passed. ProdDoctor checks whether production actually works and helps show you where it broke.**
 
 ## Version and stability
 
@@ -72,7 +74,7 @@ Then replace the placeholder in your workflow.
   <img src=".github/assets/proddoctor-demo.svg" alt="ProdDoctor detects a real production-domain failure after CI passes" width="100%">
 </p>
 
-In the example above, the build, deployment, and platform URL all pass, but the real production domain returns a Cloudflare 403. ProdDoctor fails the workflow and points toward the likely failure area before users have to report it first.
+In the example above, the build, deployment, and platform URL all pass, but the real production domain returns a Cloudflare 403. ProdDoctor does not report only a generic failure: DNS is healthy, HTTP fails with 403, and Cloudflare Challenge / WAF is flagged as the likely failure layer. It then keeps report evidence for debugging before users have to report the outage first.
 
 ## What ProdDoctor checks
 
