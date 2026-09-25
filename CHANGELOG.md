@@ -1,7 +1,8 @@
 # Changelog
 
-## 0.4.0
+## 1.4.0
 
+- Renumber the current stable release from 0.4.0 to 1.4.0; functionality remains compatible.
 - Add desktop and mobile browser profiles.
 - Add Playwright Trace recording with `off`, `on-failure`, and `always` modes.
 - Add standalone HTML Production Reports.
