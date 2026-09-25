@@ -1,15 +1,16 @@
 name: 'ProdDoctor'
-description: '在部署后检查真实生产域名、页面内容、TLS 和同源 JS/CSS 资源。'
+description: '部署后检查真实生产域名、页面内容、TLS、同源资源，并可选执行真实浏览器验收。'
 author: 'Lucas Lu'
 branding:
   icon: 'activity'
   color: 'green'
+
 inputs:
   url:
     description: '要检查的真实生产 URL'
     required: true
   expect:
-    description: '页面必须包含的关键文本，可留空'
+    description: '原始 HTML 必须包含的关键文本，可留空'
     required: false
     default: ''
   status:
@@ -21,7 +22,7 @@ inputs:
     required: false
     default: '2'
   timeout:
-    description: '单次请求超时（毫秒）'
+    description: '单次 HTTP 请求超时（毫秒）'
     required: false
     default: '15000'
   check_assets:
@@ -36,6 +37,32 @@ inputs:
     description: 'TLS 证书剩余多少天时给出到期提示'
     required: false
     default: '14'
+
+  browser:
+    description: '是否启用 Playwright + Chromium 浏览器检查'
+    required: false
+    default: 'false'
+  browser_expect:
+    description: '浏览器渲染后的可见文本必须包含的内容'
+    required: false
+    default: ''
+  browser_timeout:
+    description: '浏览器导航超时（毫秒）'
+    required: false
+    default: '30000'
+  browser_settle:
+    description: 'DOMContentLoaded 后额外等待时间（毫秒）'
+    required: false
+    default: '750'
+  browser_fail_console:
+    description: '是否把 Console error 作为阻断问题'
+    required: false
+    default: 'false'
+  upload_screenshot:
+    description: '浏览器检查时是否上传整页截图 Artifact'
+    required: false
+    default: 'true'
+
 runs:
   using: 'composite'
   steps:
@@ -43,6 +70,48 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
+
+    - name: Validate ProdDoctor inputs
+      shell: bash
+      env:
+        PROD_DOCTOR_CHECK_ASSETS: ${{ inputs.check_assets }}
+        PROD_DOCTOR_BROWSER: ${{ inputs.browser }}
+        PROD_DOCTOR_BROWSER_FAIL_CONSOLE: ${{ inputs.browser_fail_console }}
+        PROD_DOCTOR_UPLOAD_SCREENSHOT: ${{ inputs.upload_screenshot }}
+        PROD_DOCTOR_BROWSER_EXPECT: ${{ inputs.browser_expect }}
+      run: |
+        for value in           "$PROD_DOCTOR_CHECK_ASSETS"           "$PROD_DOCTOR_BROWSER"           "$PROD_DOCTOR_BROWSER_FAIL_CONSOLE"           "$PROD_DOCTOR_UPLOAD_SCREENSHOT"; do
+          case "$value" in
+            true|false) ;;
+            *)
+              echo "布尔参数只接受 true 或 false"
+              exit 2
+              ;;
+          esac
+        done
+
+        if [ "$PROD_DOCTOR_BROWSER" != "true" ] && [ -n "$PROD_DOCTOR_BROWSER_EXPECT" ]; then
+          echo "browser_expect 需要 browser: true"
+          exit 2
+        fi
+
+    - name: Install Playwright browser runtime
+      if: ${{ inputs.browser == 'true' }}
+      shell: bash
+      run: |
+        PW_DIR="$RUNNER_TEMP/proddoctor-playwright"
+        mkdir -p "$PW_DIR"
+        cd "$PW_DIR"
+
+        if [ ! -f package.json ]; then
+          npm init -y >/dev/null 2>&1
+        fi
+
+        npm install --no-save --package-lock=false playwright@1.63.0
+        ./node_modules/.bin/playwright install --with-deps chromium
+
+        echo "PRODDOCTOR_PLAYWRIGHT_DIR=$PW_DIR" >> "$GITHUB_ENV"
+
     - name: ProdDoctor production check
       shell: bash
       env:
@@ -54,6 +123,12 @@ runs:
         PROD_DOCTOR_CHECK_ASSETS: ${{ inputs.check_assets }}
         PROD_DOCTOR_MAX_ASSETS: ${{ inputs.max_assets }}
         PROD_DOCTOR_TLS_WARN_DAYS: ${{ inputs.tls_warn_days }}
+        PROD_DOCTOR_BROWSER: ${{ inputs.browser }}
+        PROD_DOCTOR_BROWSER_EXPECT: ${{ inputs.browser_expect }}
+        PROD_DOCTOR_BROWSER_TIMEOUT: ${{ inputs.browser_timeout }}
+        PROD_DOCTOR_BROWSER_SETTLE: ${{ inputs.browser_settle }}
+        PROD_DOCTOR_BROWSER_FAIL_CONSOLE: ${{ inputs.browser_fail_console }}
+        PROD_DOCTOR_UPLOAD_SCREENSHOT: ${{ inputs.upload_screenshot }}
       run: |
         args=(
           "$PROD_DOCTOR_URL"
@@ -71,13 +146,37 @@ runs:
           args+=(--status "$PROD_DOCTOR_STATUS")
         fi
 
-        case "$PROD_DOCTOR_CHECK_ASSETS" in
-          true|TRUE|1|yes|YES) ;;
-          false|FALSE|0|no|NO) args+=(--no-assets) ;;
-          *)
-            echo "check_assets 只接受 true/false、1/0 或 yes/no"
-            exit 2
-            ;;
-        esac
+        if [ "$PROD_DOCTOR_CHECK_ASSETS" = "false" ]; then
+          args+=(--no-assets)
+        fi
+
+        if [ "$PROD_DOCTOR_BROWSER" = "true" ]; then
+          args+=(
+            --browser
+            --browser-timeout "$PROD_DOCTOR_BROWSER_TIMEOUT"
+            --browser-settle "$PROD_DOCTOR_BROWSER_SETTLE"
+          )
+
+          if [ -n "$PROD_DOCTOR_BROWSER_EXPECT" ]; then
+            args+=(--browser-expect "$PROD_DOCTOR_BROWSER_EXPECT")
+          fi
+
+          if [ "$PROD_DOCTOR_BROWSER_FAIL_CONSOLE" = "true" ]; then
+            args+=(--browser-fail-console)
+          fi
+
+          if [ "$PROD_DOCTOR_UPLOAD_SCREENSHOT" = "true" ]; then
+            args+=(--browser-screenshot "$GITHUB_WORKSPACE/proddoctor-browser.png")
+          fi
+        fi
 
         node "$GITHUB_ACTION_PATH/bin/proddoctor.mjs" "${args[@]}"
+
+    - name: Upload browser screenshot
+      if: ${{ always() && inputs.browser == 'true' && inputs.upload_screenshot == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: proddoctor-browser-${{ github.job }}
+        path: ${{ github.workspace }}/proddoctor-browser.png
+        if-no-files-found: warn
+        retention-days: 7
