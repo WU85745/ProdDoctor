@@ -54,6 +54,14 @@ feat!: enable stricter validation by default
 BREAKING CHANGE: ...
 ```
 
+### 合并方式
+
+普通功能 / 修复 PR 使用 **Squash and merge**，并保持 squash 后的 commit title 与 PR title 一致。
+
+原因是 Release Please 根据 `main` 上最终 commit 的 Conventional Commit 语义计算版本。不要让一个正确的 `fix:` / `feat:` PR 最终变成只有 `Merge pull request ...` 的无语义 merge commit。
+
+通过 ChatGPT / GitHub 自动化合并时也遵循同一规则：使用 squash，并把 PR 标题作为最终 commit title。
+
 ### 版本映射
 
 - `fix:` / `perf:` → patch，例如 `1.4.0 → 1.4.1`
