@@ -7,7 +7,7 @@
 [![Test ProdDoctor](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/test.yml/badge.svg)](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/test.yml)
 [![Smoke test GitHub Action](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/action-smoke.yml/badge.svg)](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/action-smoke.yml)
 [![Browser smoke test](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/browser-smoke.yml/badge.svg)](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/browser-smoke.yml)
-![Version](https://img.shields.io/badge/version-v1.4.0-2563eb)
+![Version](https://img.shields.io/badge/version-v1.4.1-2563eb)
 ![License](https://img.shields.io/badge/license-MIT-16a34a)
 
 <p align="center">
@@ -24,19 +24,19 @@ When something fails, ProdDoctor does more than return a red check. It narrows t
 
 ## Version and stability
 
-The current public stable release is **v1.4.0**.
+The current public stable release is **v1.4.1**.
 
-- For normal evaluation and first-time integration, use `lucaswenbo/ProdDoctor@v1.4.0`.
+- For normal evaluation and first-time integration, use `lucaswenbo/ProdDoctor@v1.4.1`.
 - For production gates, pin the Action to the **full commit SHA** behind the release tag.
 - `@main` tracks current development and may change at any time. It is not recommended for production gating.
-- Concrete release tags such as `v1.4.0` are immutable after publication. Fixes should be released as a new patch, for example `v1.4.1`.
+- Concrete release tags such as `v1.4.1` are immutable after publication. Fixes should be released as a new patch, for example `v1.4.2`.
 - A floating major tag such as `v1` may point to the latest stable 1.x release, but it moves and is therefore not appropriate for environments that require strict reproducibility.
 - Features may still evolve quickly. Check [CHANGELOG.md](CHANGELOG.md) before upgrading.
 
 ## 30-second setup
 
 ```yaml
-- uses: lucaswenbo/ProdDoctor@v1.4.0
+- uses: lucaswenbo/ProdDoctor@v1.4.1
   with:
     url: https://example.com
     expect: My Website
@@ -49,7 +49,7 @@ No Cloudflare API token is required, and you do not need to modify your deployme
 | Reference | Best for | Stability |
 |---|---|---|
 | `lucaswenbo/ProdDoctor@main` | Development, experimentation, latest code | Moves with `main`; not recommended for production gates |
-| `lucaswenbo/ProdDoctor@v1.4.0` | Recommended starting point | Concrete release tag; immutable by project policy |
+| `lucaswenbo/ProdDoctor@v1.4.1` | Recommended starting point | Concrete release tag; immutable by project policy |
 | `lucaswenbo/ProdDoctor@<commit-sha>` | Production and reproducible CI | Most stable; pins one exact commit |
 
 For production:
@@ -60,10 +60,10 @@ For production:
     url: https://example.com
 ```
 
-Do not copy `<commit-sha>` literally. Open the GitHub Release or tag page for `v1.4.0`, follow it to the corresponding commit, and copy the full SHA. If you have the tag locally, you can also run:
+Do not copy `<commit-sha>` literally. Open the GitHub Release or tag page for `v1.4.1`, follow it to the corresponding commit, and copy the full SHA. If you have the tag locally, you can also run:
 
 ```bash
-git rev-list -n 1 v1.4.0
+git rev-list -n 1 v1.4.1
 ```
 
 Then replace the placeholder in your workflow.
@@ -101,7 +101,7 @@ In the example above, the build, deployment, and platform URL all pass, but the 
 - Request timing, retries, and JSON output
 - GitHub Actions Job Summary
 
-> v1.4.0 keeps lightweight HTTP validation as the default. Enable browser mode only when you need real Chromium execution, mobile evidence, screenshots, traces, or rendered-page assertions.
+> v1.4.1 keeps lightweight HTTP validation as the default. Enable browser mode only when you need real Chromium execution, mobile evidence, screenshots, traces, or rendered-page assertions.
 
 ---
 
@@ -138,7 +138,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: lucaswenbo/ProdDoctor@v1.4.0
+      - uses: lucaswenbo/ProdDoctor@v1.4.1
         with:
           url: https://example.com
 ```
@@ -188,7 +188,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: lucaswenbo/ProdDoctor@v1.4.0
+      - uses: lucaswenbo/ProdDoctor@v1.4.1
         with:
           url: https://example.com
           expect: My Website
@@ -234,7 +234,7 @@ jobs:
       # - run: your-deploy-command
 
       - name: Verify real production domain
-        uses: lucaswenbo/ProdDoctor@v1.4.0
+        uses: lucaswenbo/ProdDoctor@v1.4.1
         with:
           url: https://example.com
           expect: My Website
@@ -261,7 +261,7 @@ pageerror         ❌ Cannot read properties of undefined
 Enable browser mode:
 
 ```yaml
-- uses: lucaswenbo/ProdDoctor@v1.4.0
+- uses: lucaswenbo/ProdDoctor@v1.4.1
   with:
     url: https://example.com
     browser: true
@@ -312,7 +312,7 @@ Uncaught JavaScript `pageerror` remains blocking.
 
 ### Evidence Artifact
 
-v1.4.0 stores browser evidence in an isolated artifact:
+v1.4.1 stores browser evidence in an isolated artifact:
 
 ```text
 proddoctor-evidence-<job>-<unique-id>/
