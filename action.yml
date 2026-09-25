@@ -1,5 +1,5 @@
 name: 'ProdDoctor'
-description: '部署后检查真实生产域名、TLS、同源资源，并可选执行带截图/Trace/报告的 Chromium 验收。'
+description: 'Post-deploy production validation that narrows failures and preserves optional Chromium evidence.'
 author: 'Lucas Lu'
 branding:
   icon: 'activity'
@@ -7,26 +7,26 @@ branding:
 
 inputs:
   url:
-    description: '要检查的真实生产 URL'
+    description: 'Real production URL to validate'
     required: true
   expect:
-    description: '原始 HTML 必须包含的关键文本，可留空'
+    description: 'Text that must appear in the raw HTML; leave empty to disable'
     required: false
     default: ''
   status:
-    description: '最终 HTTP 状态必须精确匹配的状态码，可留空'
+    description: 'Exact final HTTP status to require; leave empty to accept any successful status'
     required: false
     default: ''
   retries:
-    description: '失败后的重试次数'
+    description: 'Number of retries after the initial failed attempt'
     required: false
     default: '2'
   timeout:
-    description: '单次 HTTP 请求超时（毫秒）'
+    description: 'HTTP request timeout in milliseconds'
     required: false
     default: '15000'
   check_assets:
-    description: '是否检查同源 JS/CSS 静态资源'
+    description: 'Whether to validate same-origin JavaScript and CSS assets'
     required: false
     default: 'true'
   max_body_bytes:
@@ -34,48 +34,48 @@ inputs:
     required: false
     default: '0'
   max_assets:
-    description: '最多检查的同源 JS/CSS 数量'
+    description: 'Maximum number of same-origin JavaScript and CSS assets to validate'
     required: false
     default: '20'
   tls_warn_days:
-    description: 'TLS 证书剩余多少天时给出到期提示'
+    description: 'Warn when the TLS certificate has this many days remaining'
     required: false
     default: '14'
 
   browser:
-    description: '是否启用 Playwright + Chromium 浏览器检查'
+    description: 'Enable Playwright + Chromium browser validation'
     required: false
     default: 'false'
   browser_expect:
-    description: '浏览器渲染后的可见文本必须包含的内容'
+    description: 'Text that must appear after Chromium renders the page'
     required: false
     default: ''
   browser_timeout:
-    description: '浏览器导航超时（毫秒）'
+    description: 'Browser navigation timeout in milliseconds'
     required: false
     default: '30000'
   browser_settle:
-    description: 'DOMContentLoaded 后额外等待时间（毫秒）'
+    description: 'Extra wait after DOMContentLoaded in milliseconds'
     required: false
     default: '750'
   browser_fail_console:
-    description: '是否把 Console error 作为阻断问题'
+    description: 'Treat browser console errors as blocking failures'
     required: false
     default: 'false'
   browser_profile:
-    description: '浏览器视口预设：desktop 或 mobile'
+    description: 'Browser viewport preset: desktop or mobile'
     required: false
     default: 'desktop'
   browser_trace:
-    description: 'Playwright Trace：off、on-failure 或 always'
+    description: 'Playwright trace mode: off, on-failure, or always'
     required: false
     default: 'on-failure'
   upload_screenshot:
-    description: '浏览器检查时是否保存整页截图'
+    description: 'Save a full-page screenshot during browser validation'
     required: false
     default: 'true'
   upload_report:
-    description: '浏览器检查时是否生成 JSON + HTML Production Report'
+    description: 'Generate JSON and HTML production reports during browser validation'
     required: false
     default: 'true'
 
