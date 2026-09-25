@@ -66,7 +66,7 @@ async function fetchOnce(url, {
       method,
       redirect: 'follow',
       headers: {
-        'user-agent': 'ProdDoctor/1.4 (+https://github.com/WU85745/ProdDoctor)',
+        'user-agent': 'ProdDoctor/1.4.0 (+https://github.com/WU85745/ProdDoctor)',
         accept: 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
         'cache-control': 'no-cache'
       },

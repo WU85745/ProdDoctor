@@ -6,7 +6,7 @@ import { toChineseReport, toMarkdownSummary } from '../src/report.mjs';
 import { toHtmlReport } from '../src/html-report.mjs';
 
 function usage() {
-  console.log(`ProdDoctor v1.4
+  console.log(`ProdDoctor v1.4.0
 
 用法：
   proddoctor <URL> [选项]

@@ -3,7 +3,7 @@
 [![Test ProdDoctor](https://github.com/WU85745/ProdDoctor/actions/workflows/test.yml/badge.svg)](https://github.com/WU85745/ProdDoctor/actions/workflows/test.yml)
 [![Smoke test GitHub Action](https://github.com/WU85745/ProdDoctor/actions/workflows/action-smoke.yml/badge.svg)](https://github.com/WU85745/ProdDoctor/actions/workflows/action-smoke.yml)
 [![Browser smoke test](https://github.com/WU85745/ProdDoctor/actions/workflows/browser-smoke.yml/badge.svg)](https://github.com/WU85745/ProdDoctor/actions/workflows/browser-smoke.yml)
-![Version](https://img.shields.io/badge/version-v1.4-2563eb)
+![Version](https://img.shields.io/badge/version-v1.4.0-2563eb)
 ![License](https://img.shields.io/badge/license-MIT-16a34a)
 
 <p align="center">
@@ -16,16 +16,53 @@ ProdDoctor 在部署完成后直接检查用户真正访问到的生产环境。
 
 > **CI 是绿的，不代表生产网站真的正常。**
 
+## 版本与稳定性
+
+当前对外稳定版本为 **v1.4.0**。用户示例默认引用具体版本 `@v1.4.0`；如果 Releases / tag 页面尚未出现该版本，请先不要把这个引用用于实际流水线。
+
+- 功能仍可能较快增加，升级前请先查看 [CHANGELOG.md](CHANGELOG.md)。
+- 一般试用或首次接入，使用 `WU85745/ProdDoctor@v1.4.0`。
+- 生产门禁建议把具体 tag 换成该 tag 对应的**完整 commit SHA**，避免任何引用漂移。
+- `@main` 跟踪最新开发代码，行为可能随时变化，不建议用于生产门禁。
+- 具体版本 tag（例如 `v1.4.0`）发布后禁止移动；补丁修复应发布新的 patch 版本，例如 `v1.4.1`。
+- 可维护浮动 major tag（例如 `v1`）指向当前 1.x 最新发布，但它会移动，不适合要求严格可复现的生产流水线。
+
 ## 30 秒接入
 
 ```yaml
-- uses: WU85745/ProdDoctor@main
+- uses: WU85745/ProdDoctor@v1.4.0
   with:
     url: https://example.com
     expect: My Website
 ```
 
 不需要 Cloudflare API Token，也不需要修改你的部署平台配置。
+
+## 如何锁定版本
+
+三种常见写法的用途不同：
+
+| 引用方式 | 适合场景 | 稳定性 |
+|---|---|---|
+| `WU85745/ProdDoctor@main` | 开发、试用、验证最新代码 | 会随 main 变化，不建议用于生产门禁 |
+| `WU85745/ProdDoctor@v1.4.0` | 推荐入门和一般项目接入 | 具体版本 tag，按项目约定发布后不移动 |
+| `WU85745/ProdDoctor@<commit-sha>` | 生产流水线、严格可复现环境 | 最稳定，精确锁定到一个提交 |
+
+生产环境建议使用：
+
+```yaml
+- uses: WU85745/ProdDoctor@<commit-sha>
+  with:
+    url: https://example.com
+```
+
+不要把 `<commit-sha>` 原样复制。发布 `v1.4.0` 后，可以从 GitHub **Releases / v1.4.0 tag 页面**进入该版本对应的 commit，再复制完整 SHA；本地已拉取 tag 时也可以运行：
+
+```bash
+git rev-list -n 1 v1.4.0
+```
+
+得到该 tag 对应的完整 commit SHA 后，再替换 Workflow 里的占位符。
 
 ### 一个典型故障
 
@@ -55,7 +92,7 @@ ProdDoctor 在部署完成后直接检查用户真正访问到的生产环境。
 - 请求耗时、失败重试、JSON 输出
 - GitHub Actions Job Summary
 
-> v1.4 默认仍保持轻量 HTTP 检查；需要时可以启用 Playwright + Chromium 浏览器模式。浏览器模式现在还可以生成移动端证据、失败 Trace、整页截图，以及独立的 HTML / JSON Production Report。
+> v1.4.0 默认仍保持轻量 HTTP 检查；需要时可以启用 Playwright + Chromium 浏览器模式。浏览器模式现在还可以生成移动端证据、失败 Trace、整页截图，以及独立的 HTML / JSON Production Report。
 
 ---
 
@@ -96,7 +133,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: WU85745/ProdDoctor@main
+      - uses: WU85745/ProdDoctor@v1.4.0
         with:
           url: https://example.com
 ```
@@ -188,7 +225,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: WU85745/ProdDoctor@main
+      - uses: WU85745/ProdDoctor@v1.4.0
         with:
           url: https://example.com
           expect: My Website
@@ -238,7 +275,7 @@ jobs:
       # - run: your-deploy-command
 
       - name: Verify real production domain
-        uses: WU85745/ProdDoctor@main
+        uses: WU85745/ProdDoctor@v1.4.0
         with:
           url: https://example.com
           expect: My Website
@@ -265,7 +302,7 @@ pageerror         ❌ Cannot read properties of undefined
 启用浏览器模式：
 
 ```yaml
-- uses: WU85745/ProdDoctor@main
+- uses: WU85745/ProdDoctor@v1.4.0
   with:
     url: https://example.com
     browser: true
@@ -320,7 +357,7 @@ with:
 
 ### Evidence Artifact
 
-v1.4 会把浏览器证据集中放在一个 Artifact 中：
+v1.4.0 会把浏览器证据集中放在一个 Artifact 中：
 
 ```text
 proddoctor-evidence-<job>/
@@ -443,6 +480,18 @@ Playwright + Chromium
 ```
 
 这样简单站点不需要承担浏览器测试成本，而前端应用可以打开更完整的生产验收。
+
+---
+
+# 兼容性约定
+
+ProdDoctor 按 SemVer 管理对外行为，并尽量让已有 Workflow 在升级后继续按原意工作：
+
+- 已有 Action input 只新增，不随意改名，也不复用旧名称表达新的语义。
+- 默认值变化、失败条件变严、参数语义变化等，如果会破坏已有 Workflow 的行为，视为 **breaking change**，按 SemVer 升主版本。
+- 新检查默认尽量先以 warning 或显式开关方式引入；只有在不改变既有行为，或进入新的主版本后，才默认作为阻断条件。
+- 布尔输入只接受 `true` / `false`，避免同一参数出现多套隐式解释。
+- 升级具体版本前先查看 [CHANGELOG.md](CHANGELOG.md)，尤其关注 `Changed` 和 breaking-change 说明。
 
 ---
 
@@ -890,6 +939,8 @@ npm run check
 ```bash
 npm test
 ```
+
+维护者发布新版本前，请按 [docs/releasing.md](docs/releasing.md) 的检查清单执行。
 
 仓库包含真实 GitHub Action 烟雾测试，分别验证：
 
