@@ -940,7 +940,7 @@ npm run check
 npm test
 ```
 
-维护者发布新版本前，请按 [docs/releasing.md](docs/releasing.md) 的检查清单执行。
+维护者发布流程已经自动化：普通开发只需要使用 Conventional Commit / PR 标题，Release Please 会创建 Draft Release PR；版本同步、版本策略、单元测试、Action smoke 和 Chromium smoke 全部通过后才会自动标记为 Ready。完整规则见 [docs/releasing.md](docs/releasing.md)。
 
 仓库包含真实 GitHub Action 烟雾测试，分别验证：
 
