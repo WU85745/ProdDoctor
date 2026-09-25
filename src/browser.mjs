@@ -1,11 +1,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { createRequire } from 'node:module';
 
 async function loadPlaywright() {
-  const explicitPath = process.env.PRODDOCTOR_PLAYWRIGHT_PATH;
-  if (explicitPath) {
-    return import(pathToFileURL(explicitPath).href);
+  const explicitDir = process.env.PRODDOCTOR_PLAYWRIGHT_DIR;
+  if (explicitDir) {
+    const require = createRequire(`${explicitDir}/package.json`);
+    return require('playwright');
   }
 
   try {
