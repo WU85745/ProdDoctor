@@ -167,7 +167,7 @@ try {
 
   const htmlReport = value('--html-report', process.env.PRODDOCTOR_HTML_REPORT || null);
   if (htmlReport) {
-    await writeTextFile(htmlReport, toHtmlReport(result));
+    await writeTextFile(htmlReport, toHtmlReport(result, { reportPath: htmlReport }));
   }
 
   if (process.env.GITHUB_STEP_SUMMARY) {
