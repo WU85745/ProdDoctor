@@ -97,6 +97,66 @@ changed = updateFile('README.md', (input) => {
   return text;
 }) || changed;
 
+changed = updateFile('README.en.md', (input) => {
+  let text = input;
+
+  text = replaceRequired(
+    text,
+    /version-v\d+\.\d+\.\d+-2563eb/,
+    `version-v${version}-2563eb`,
+    'English README badge'
+  );
+
+  text = replaceRequired(
+    text,
+    /The current public stable release is \*\*v\d+\.\d+\.\d+\*\*/,
+    `The current public stable release is **v${version}**`,
+    'English README current version'
+  );
+
+  text = text.replace(
+    /((?:[\w.-]+\/ProdDoctor|\`)@)v\d+\.\d+\.\d+/g,
+    `$1v${version}`
+  );
+
+  text = replaceRequired(
+    text,
+    /Concrete release tags such as \`v\d+\.\d+\.\d+\` are immutable after publication\. Fixes should be released as a new patch, for example \`v\d+\.\d+\.\d+\`\./,
+    `Concrete release tags such as \`v${version}\` are immutable after publication. Fixes should be released as a new patch, for example \`v${nextPatch}\`.`,
+    'English README tag policy'
+  );
+
+  text = replaceRequired(
+    text,
+    /tag page for \`v\d+\.\d+\.\d+\`/,
+    `tag page for \`v${version}\``,
+    'English README release tag guidance'
+  );
+
+  text = replaceRequired(
+    text,
+    /git rev-list -n 1 v\d+\.\d+\.\d+/,
+    `git rev-list -n 1 v${version}`,
+    'English README rev-list'
+  );
+
+  text = replaceRequired(
+    text,
+    /> v\d+\.\d+\.\d+ keeps lightweight HTTP validation as the default/,
+    `> v${version} keeps lightweight HTTP validation as the default`,
+    'English README mode note'
+  );
+
+  text = replaceRequired(
+    text,
+    /v\d+\.\d+\.\d+ stores browser evidence in an isolated artifact/,
+    `v${version} stores browser evidence in an isolated artifact`,
+    'English README evidence version'
+  );
+
+  return text;
+}) || changed;
+
 for (const path of ['examples/production-check.yml', 'examples/browser-check.yml']) {
   changed = updateFile(path, (input) =>
     input
