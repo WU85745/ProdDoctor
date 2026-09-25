@@ -36,14 +36,16 @@ Real custom domain ❌
 - 同源 JS / CSS 是否 404、5xx 或错误返回 HTML
 - 可选 Playwright + Chromium 真浏览器渲染检查
 - 未捕获 JavaScript 异常、关键同源请求失败和渲染后文本校验
-- 浏览器整页截图 Artifact
+- 浏览器整页截图、Playwright Trace 和统一 Evidence Artifact
+- 独立 HTML / JSON Production Report
+- desktop / mobile 两种浏览器视口预设
 - `CF-Ray`、`CF-Cache-Status` 和 Server 响应信息
 - `robots.txt` 与 `sitemap.xml`
 - 常见安全响应头
 - 请求耗时、失败重试、JSON 输出
 - GitHub Actions Job Summary
 
-> v0.3 默认仍保持轻量 HTTP 检查；需要时可以启用 Playwright + Chromium 浏览器模式，检查真实渲染、JavaScript 运行时异常、关键资源加载失败，并自动保存整页截图。
+> v0.4 默认仍保持轻量 HTTP 检查；需要时可以启用 Playwright + Chromium 浏览器模式。浏览器模式现在还可以生成移动端证据、失败 Trace、整页截图，以及独立的 HTML / JSON Production Report。
 
 ---
 
@@ -306,24 +308,115 @@ with:
 
 未捕获的 JavaScript `pageerror` 始终属于阻断问题。
 
-### 截图
+### Evidence Artifact
 
-GitHub Action 中启用浏览器模式后，默认会保存整页截图并上传为 Artifact：
+v0.4 会把浏览器证据集中放在一个 Artifact 中：
 
 ```text
-proddoctor-browser-<job>
+proddoctor-evidence-<job>/
+├── browser.png
+├── report.html
+├── report.json
+└── trace.zip        # 按 browser_trace 策略生成
 ```
+
+其中：
+
+- `browser.png`：最终页面整页截图
+- `report.html`：可以直接打开阅读的 Production Report
+- `report.json`：适合脚本、CI 或后续自动化读取
+- `trace.zip`：Playwright Trace，可用于回放页面加载过程、DOM 快照和网络活动
 
 Artifact 默认保留 7 天。
 
-不需要截图时：
+### desktop / mobile
+
+默认使用桌面视口：
+
+```yaml
+browser_profile: desktop
+```
+
+当前桌面视口为：
+
+```text
+1440 × 900
+```
+
+需要模拟移动端时：
 
 ```yaml
 with:
   url: https://example.com
   browser: true
-  upload_screenshot: false
+  browser_profile: mobile
 ```
+
+移动端预设使用：
+
+```text
+390 × 844
+touch enabled
+mobile viewport enabled
+```
+
+它适合抓“桌面正常、手机白屏或布局逻辑报错”这类生产问题。
+
+### Playwright Trace
+
+`browser_trace` 支持三种模式：
+
+| 值 | 行为 |
+|---|---|
+| `off` | 不记录 Trace |
+| `on-failure` | 默认；只在浏览器检查失败时保留 Trace |
+| `always` | 无论成功失败都保留 Trace |
+
+推荐保持默认：
+
+```yaml
+browser_trace: on-failure
+```
+
+这样成功的部署不会不断产生 Trace 文件，但失败时会自动留下回放证据。
+
+如果希望每次都保留：
+
+```yaml
+browser_trace: always
+```
+
+### Production Report
+
+浏览器模式默认生成：
+
+```text
+report.html
+report.json
+```
+
+HTML 报告包含：
+
+- 整体 PASS / FAIL
+- DNS
+- HTTP
+- Cloudflare / WAF
+- TLS
+- 同源 JS/CSS
+- 浏览器 profile 和 viewport
+- pageerror
+- Console error
+- 关键网络失败
+- 截图链接
+- Trace 链接
+- failures / warnings
+
+如果不需要报告：
+
+```yaml
+upload_report: false
+```
+
 
 ### 浏览器模式为什么不是默认开启？
 
@@ -360,7 +453,10 @@ Playwright + Chromium
 | `browser_timeout` | 否 | `30000` | 浏览器导航超时，毫秒 |
 | `browser_settle` | 否 | `750` | DOMContentLoaded 后额外等待，毫秒 |
 | `browser_fail_console` | 否 | `false` | Console error 是否阻断 |
-| `upload_screenshot` | 否 | `true` | 浏览器模式是否上传截图 Artifact |
+| `browser_profile` | 否 | `desktop` | `desktop` 或 `mobile` 视口预设 |
+| `browser_trace` | 否 | `on-failure` | `off` / `on-failure` / `always` |
+| `upload_screenshot` | 否 | `true` | 是否保存整页截图 |
+| `upload_report` | 否 | `true` | 是否生成 HTML + JSON 报告 |
 
 ### retries 怎么计算？
 
@@ -456,7 +552,12 @@ npx playwright install chromium
 node ./bin/proddoctor.mjs https://example.com \
   --browser \
   --browser-expect "Example Domain" \
-  --browser-screenshot ./production.png
+  --browser-profile mobile \
+  --browser-screenshot ./production.png \
+  --browser-trace on-failure \
+  --browser-trace-path ./trace.zip \
+  --html-report ./report.html \
+  --json-file ./report.json
 ```
 
 如果希望任何 Console error 都让检查失败：
@@ -723,8 +824,8 @@ ProdDoctor 本身不会修改 Cloudflare 配置，只负责从公网检查结果
 
 - 登录后操作流程与表单交互脚本
 - 多浏览器矩阵（当前使用 Chromium）
-- 移动设备预设与多 viewport 矩阵
-- Playwright Trace / Video
+- 自定义 viewport 矩阵（当前提供 desktop / mobile 两个预设）
+- Playwright Video
 - Lighthouse / Core Web Vitals
 - 登录态页面
 - 自定义请求 Header
@@ -746,11 +847,13 @@ ProdDoctor/
 │   ├── assets.mjs
 │   ├── tls.mjs
 │   ├── browser.mjs
-│   └── report.mjs
+│   ├── report.mjs
+│   └── html-report.mjs
 ├── test/
 │   └── checker.test.mjs
 ├── examples/
-│   └── production-check.yml
+│   ├── production-check.yml
+│   └── browser-check.yml
 └── .github/workflows/
     ├── test.yml
     ├── action-smoke.yml
@@ -785,7 +888,7 @@ npm test
 - 关闭静态资源检查
 - Playwright + Chromium 真浏览器模式
 - `browser_expect`
-- 浏览器截图 Artifact
+- 浏览器 Evidence Artifact（截图、Trace、HTML/JSON 报告）
 
 ---
 
@@ -793,9 +896,9 @@ npm test
 
 后续计划包括：
 
-- [ ] Playwright 浏览器渲染检查
-- [ ] 自动截图并上传为 GitHub Actions Artifact
-- [ ] JavaScript Console Error 检测
+- [ ] 登录流程与可编排浏览器步骤
+- [ ] 自定义 viewport / 多设备矩阵
+- [ ] Playwright Video
 - [ ] 多 URL 批量检查
 - [ ] Lighthouse / Core Web Vitals
 - [ ] PR 评论报告
