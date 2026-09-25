@@ -229,7 +229,7 @@ jobs:
 |---|---|---|---|
 | `url` | 是 | 无 | 要检查的正式 URL |
 | `expect` | 否 | 空 | 页面必须包含的文本 |
-| `retries` | 否 | `2`（GitHub Action） | 失败后额外重试次数 |
+| `retries` | 否 | GitHub Action：`2`；CLI：`1` | 失败后额外重试次数 |
 | `timeout` | 否 | `15000` | 单次请求超时，单位毫秒 |
 
 ### retries 怎么计算？
