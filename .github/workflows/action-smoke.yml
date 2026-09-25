@@ -1,3 +1,6 @@
+# 内部狗粮测试：故意使用当前 checkout 的本地 Action（uses: ./）。
+# 这不是给最终用户复制的示例；用户文档应锁定具体版本 tag 或完整 commit SHA。
+
 name: Smoke test GitHub Action
 
 on:
