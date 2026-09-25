@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="540" viewBox="0 0 1000 540">
+  <rect width="1000" height="540" fill="#090c12"/>
+  <style>
+    .sans{font-family:Inter,Segoe UI,Arial,sans-serif}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .muted{fill:#9ba7b9}.white{fill:#f5f7fa}.ok{fill:#4ade80}.bad{fill:#ff6868}.info{fill:#67a6ff}.warn{fill:#ffc754}
+  </style>
+  <text x="45" y="62" class="sans white" font-size="34" font-weight="800">ProdDoctor  •  v1.4</text>
+  <text x="45" y="102" class="sans muted" font-size="22">CI passed. The real custom domain did not.</text>
+
+  <g>
+    <rect x="48" y="135" width="195" height="66" rx="14" fill="#111823" stroke="#36445a" stroke-width="2"/>
+    <text x="64" y="164" class="mono white" font-size="17">Build</text>
+    <text x="174" y="189" class="mono ok" font-size="17">PASS</text>
+
+    <rect x="286" y="135" width="195" height="66" rx="14" fill="#111823" stroke="#36445a" stroke-width="2"/>
+    <text x="302" y="164" class="mono white" font-size="17">Deploy</text>
+    <text x="412" y="189" class="mono ok" font-size="17">PASS</text>
+
+    <rect x="524" y="135" width="195" height="66" rx="14" fill="#111823" stroke="#36445a" stroke-width="2"/>
+    <text x="540" y="164" class="mono white" font-size="17">Platform URL</text>
+    <text x="650" y="189" class="mono ok" font-size="17">PASS</text>
+
+    <rect x="762" y="135" width="190" height="66" rx="14" fill="#111823" stroke="#36445a" stroke-width="2"/>
+    <text x="778" y="164" class="mono white" font-size="17">Production URL</text>
+    <text x="884" y="189" class="mono bad" font-size="17">FAIL</text>
+  </g>
+
+  <g stroke="#4d5b71" stroke-width="3" fill="#4d5b71">
+    <line x1="250" y1="168" x2="278" y2="168"/><path d="M278 168 l-10 -7 v14z"/>
+    <line x1="488" y1="168" x2="516" y2="168"/><path d="M516 168 l-10 -7 v14z"/>
+    <line x1="726" y1="168" x2="754" y2="168"/><path d="M754 168 l-10 -7 v14z"/>
+  </g>
+
+  <rect x="48" y="245" width="904" height="247" rx="18" fill="#0a0f17" stroke="#2c3a4e" stroke-width="2"/>
+  <circle cx="80" cy="271" r="6" fill="#ff5f56"/>
+  <circle cx="101" cy="271" r="6" fill="#ffbd2e"/>
+  <circle cx="122" cy="271" r="6" fill="#48cc6f"/>
+
+  <g opacity="1">
+    <text x="78" y="320" class="mono info" font-size="19">$ proddoctor https://prod.example.com --status 200</text>
+    <animate attributeName="opacity" values="0;1;1" keyTimes="0;0.12;1" dur="6s" repeatCount="indefinite"/>
+  </g>
+  <g opacity="1">
+    <text x="78" y="354" class="mono ok" font-size="19">✓ DNS resolved</text>
+    <animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.20;0.28;1" dur="6s" repeatCount="indefinite"/>
+  </g>
+  <g opacity="1">
+    <text x="78" y="388" class="mono bad" font-size="19">✗ HTTP 403 on the real production domain</text>
+    <animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.38;0.46;1" dur="6s" repeatCount="indefinite"/>
+  </g>
+  <g opacity="1">
+    <text x="78" y="422" class="mono bad" font-size="19">✗ Cloudflare Challenge / WAF suspected</text>
+    <animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.54;0.62;1" dur="6s" repeatCount="indefinite"/>
+  </g>
+  <g opacity="1">
+    <text x="78" y="456" class="mono warn" font-size="19">→ report.json + report.html saved</text>
+    <animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.72;0.80;1" dur="6s" repeatCount="indefinite"/>
+  </g>
+</svg>
