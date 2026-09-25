@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import { runChecks } from '../src/checker.mjs';
 import { toChineseReport, toMarkdownSummary } from '../src/report.mjs';
 import { toHtmlReport } from '../src/html-report.mjs';
@@ -69,11 +70,8 @@ function value(name, fallback = null, { allowEmpty = false } = {}) {
 }
 
 async function writeTextFile(filePath, content) {
-  const resolved = new URL(`file://${process.cwd()}/`).pathname;
-  void resolved;
-  const nodePath = await import('node:path');
-  const full = nodePath.resolve(filePath);
-  await fs.mkdir(nodePath.dirname(full), { recursive: true });
+  const full = path.resolve(filePath);
+  await fs.mkdir(path.dirname(full), { recursive: true });
   await fs.writeFile(full, content, 'utf8');
 }
 
