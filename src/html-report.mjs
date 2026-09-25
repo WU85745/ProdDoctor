@@ -28,10 +28,19 @@ function list(items) {
   return `<ul>${items.map((item) => `<li>${esc(item)}</li>`).join('')}</ul>`;
 }
 
-export function toHtmlReport(result) {
+function relativeEvidenceLink(filePath, reportPath) {
+  if (!filePath) return null;
+  if (!reportPath) return path.basename(filePath);
+
+  const reportDir = path.dirname(path.resolve(reportPath));
+  const relative = path.relative(reportDir, path.resolve(filePath)) || path.basename(filePath);
+  return relative.split(path.sep).join('/');
+}
+
+export function toHtmlReport(result, options = {}) {
   const browser = result.browser;
-  const screenshotName = browser?.screenshotPath ? path.basename(browser.screenshotPath) : null;
-  const traceName = browser?.tracePath ? path.basename(browser.tracePath) : null;
+  const screenshotName = relativeEvidenceLink(browser?.screenshotPath, options.reportPath);
+  const traceName = relativeEvidenceLink(browser?.tracePath, options.reportPath);
 
   const rows = [
     row('DNS', result.dns.ok, result.dns.ok
