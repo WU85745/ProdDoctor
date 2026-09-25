@@ -2,6 +2,14 @@
 
 所有值得记录的变更都集中在这里。格式遵循 Keep a Changelog 的组织方式，版本号遵循 SemVer。
 
+## [1.4.1](https://github.com/lucaswenbo/ProdDoctor/compare/v1.4.0...v1.4.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* correct validation edge cases and guard release automation ([d9f2774](https://github.com/lucaswenbo/ProdDoctor/commit/d9f277456ccaa77f5ff2af820a88980e66d9ca6b))
+* synchronize releases without workflow write permission ([2efcc54](https://github.com/lucaswenbo/ProdDoctor/commit/2efcc541088a0991990f6af75739f472b208713a))
+
 ## [Unreleased]
 
 ## [1.4.0]
