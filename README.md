@@ -2,6 +2,13 @@
 
 [![Test ProdDoctor](https://github.com/WU85745/ProdDoctor/actions/workflows/test.yml/badge.svg)](https://github.com/WU85745/ProdDoctor/actions/workflows/test.yml)
 [![Smoke test GitHub Action](https://github.com/WU85745/ProdDoctor/actions/workflows/action-smoke.yml/badge.svg)](https://github.com/WU85745/ProdDoctor/actions/workflows/action-smoke.yml)
+[![Browser smoke test](https://github.com/WU85745/ProdDoctor/actions/workflows/browser-smoke.yml/badge.svg)](https://github.com/WU85745/ProdDoctor/actions/workflows/browser-smoke.yml)
+![Version](https://img.shields.io/badge/version-v1.4-2563eb)
+![License](https://img.shields.io/badge/license-MIT-16a34a)
+
+**Post-deploy production validation for real websites.**
+
+DNS、HTTP、TLS、静态资源、Cloudflare/WAF，再到真实 Chromium 渲染，ProdDoctor 用来验证“部署完成之后，用户真正访问到的网站是否正常”。
 
 **部署成功，不代表真实生产网站已经正常。**
 
@@ -45,7 +52,7 @@ Real custom domain ❌
 - 请求耗时、失败重试、JSON 输出
 - GitHub Actions Job Summary
 
-> v0.4 默认仍保持轻量 HTTP 检查；需要时可以启用 Playwright + Chromium 浏览器模式。浏览器模式现在还可以生成移动端证据、失败 Trace、整页截图，以及独立的 HTML / JSON Production Report。
+> v1.4 默认仍保持轻量 HTTP 检查；需要时可以启用 Playwright + Chromium 浏览器模式。浏览器模式现在还可以生成移动端证据、失败 Trace、整页截图，以及独立的 HTML / JSON Production Report。
 
 ---
 
@@ -310,7 +317,7 @@ with:
 
 ### Evidence Artifact
 
-v0.4 会把浏览器证据集中放在一个 Artifact 中：
+v1.4 会把浏览器证据集中放在一个 Artifact 中：
 
 ```text
 proddoctor-evidence-<job>/
