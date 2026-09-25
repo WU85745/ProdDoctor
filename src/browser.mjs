@@ -70,18 +70,15 @@ export async function runBrowserCheck(rawUrl, options = {}) {
     });
 
     page.on('requestfailed', (request) => {
-      if (!isSameOrigin(request.url(), target.origin)) return;
-      const resourceType = request.resourceType();
       requestFailures.push({
         url: request.url(),
-        resourceType,
+        resourceType: request.resourceType(),
         errorText: compactMessage(request.failure()?.errorText || 'request failed')
       });
     });
 
     page.on('response', (response) => {
       if (response.status() < 400) return;
-      if (!isSameOrigin(response.url(), target.origin)) return;
 
       badResponses.push({
         url: response.url(),
@@ -116,11 +113,16 @@ export async function runBrowserCheck(rawUrl, options = {}) {
     const renderedExpectOk = renderedExpect ? bodyText.includes(renderedExpect) : true;
 
     let savedScreenshot = null;
+    let screenshotError = null;
     if (screenshotPath) {
-      const resolved = path.resolve(screenshotPath);
-      await fs.mkdir(path.dirname(resolved), { recursive: true });
-      await page.screenshot({ path: resolved, fullPage: true });
-      savedScreenshot = resolved;
+      try {
+        const resolved = path.resolve(screenshotPath);
+        await fs.mkdir(path.dirname(resolved), { recursive: true });
+        await page.screenshot({ path: resolved, fullPage: true });
+        savedScreenshot = resolved;
+      } catch (error) {
+        screenshotError = compactMessage(error?.message || error);
+      }
     }
 
     const failures = [];
@@ -158,6 +160,9 @@ export async function runBrowserCheck(rawUrl, options = {}) {
     if (textLength === 0) {
       warnings.push('页面渲染后 body 可见文本为空');
     }
+    if (screenshotError) {
+      warnings.push(`截图保存失败：${screenshotError}`);
+    }
 
     await context.close();
 
@@ -177,6 +182,7 @@ export async function runBrowserCheck(rawUrl, options = {}) {
       criticalRequestFailures,
       criticalBadResponses,
       screenshotPath: savedScreenshot,
+      screenshotError,
       failures,
       warnings,
       error: null
@@ -198,6 +204,7 @@ export async function runBrowserCheck(rawUrl, options = {}) {
       criticalRequestFailures: [],
       criticalBadResponses: [],
       screenshotPath: null,
+      screenshotError: null,
       failures: ['浏览器检查无法完成'],
       warnings: [],
       error: error?.message || String(error)
@@ -227,6 +234,7 @@ export function skippedBrowser(reason = '未启用浏览器检查') {
     criticalRequestFailures: [],
     criticalBadResponses: [],
     screenshotPath: null,
+    screenshotError: null,
     failures: [],
     warnings: [],
     error: null
