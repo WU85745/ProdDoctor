@@ -87,7 +87,7 @@ BREAKING CHANGE: ...
    - HTTP / asset User-Agent
    - JSON report version
    - test fixture
-   - browser smoke 的版本断言
+   - browser smoke 不再包含需要更新的硬编码版本；直接对照当前 package.json 验证报告
 6. 运行版本策略检查。
 7. 运行 `npm run check`。
 8. 运行轻量 GitHub Action smoke。
@@ -98,6 +98,7 @@ BREAKING CHANGE: ...
 由于默认 GITHUB_TOKEN 创建的 PR 不会自动触发其他 Actions，本流程在同一工作流中
 运行门禁，并将 `release-gate` commit status 写到同步后的精确 PR HEAD SHA。
 结束前还会核对远程 PR HEAD 未改变。失败会保留 Draft，不会忽略 Draft 操作错误。
+版本同步不写入 .github/workflows，提交前还会检查该目录没有变更，避免要求额外的 workflows 写权限。
 如果启用 required checks，需要为机器人发布分支配置可满足的检查，不能要求未触发的普通 PR workflow。
 
 此时维护者只需要检查版本号和 CHANGELOG 是否符合预期，然后点 **Merge**。
