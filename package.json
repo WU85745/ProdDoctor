@@ -1,7 +1,7 @@
 {
   "name": "proddoctor",
-  "version": "0.1.0",
-  "description": "真正检查生产环境，而不只相信 CI 绿灯。",
+  "version": "0.2.0",
+  "description": "Post-deploy checks for real production domains: DNS, content, TLS, assets and Cloudflare/WAF failures.",
   "type": "module",
   "bin": {
     "proddoctor": "./bin/proddoctor.mjs"
@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node ./bin/proddoctor.mjs",
     "test": "node --test",
-    "check": "node --check ./src/checker.mjs && node --check ./src/report.mjs && node --check ./bin/proddoctor.mjs && npm test"
+    "check": "node --check ./src/checker.mjs && node --check ./src/assets.mjs && node --check ./src/tls.mjs && node --check ./src/report.mjs && node --check ./bin/proddoctor.mjs && npm test"
   },
   "engines": {
     "node": ">=20"
@@ -20,7 +20,9 @@
     "github-actions",
     "cloudflare",
     "deployment",
-    "smoke-test"
+    "smoke-test",
+    "tls",
+    "devops"
   ],
   "license": "MIT"
 }

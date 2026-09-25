@@ -3,32 +3,44 @@
 [![Test ProdDoctor](https://github.com/WU85745/ProdDoctor/actions/workflows/test.yml/badge.svg)](https://github.com/WU85745/ProdDoctor/actions/workflows/test.yml)
 [![Smoke test GitHub Action](https://github.com/WU85745/ProdDoctor/actions/workflows/action-smoke.yml/badge.svg)](https://github.com/WU85745/ProdDoctor/actions/workflows/action-smoke.yml)
 
-ProdDoctor 是一个轻量、零第三方依赖的生产环境检查工具。
+**部署成功，不代表真实生产网站已经正常。**
 
-很多 CI/CD 流程只能确认“代码构建成功”和“部署命令执行成功”，但真实生产域名仍可能因为 DNS、自定义域名绑定、CDN、WAF、Cloudflare Challenge、缓存或路由问题而无法正常访问。
+ProdDoctor 是一个 post-deploy production smoke test。它会在部署完成后直接检查用户真正访问的生产域名，而不是只确认构建或部署命令是否成功。
 
-ProdDoctor 会直接请求你提供的正式 URL，并把结果显示在终端和 GitHub Actions Job Summary 中。
+它特别适合发现这种情况：
 
-## 功能
+```text
+Build              ✅
+Deploy command     ✅
+Platform URL       ✅
+Real custom domain ❌
+```
 
-ProdDoctor 当前可以检查：
+只需几行 GitHub Actions 配置：
+
+```yaml
+- uses: WU85745/ProdDoctor@main
+  with:
+    url: https://example.com
+    expect: My Website
+```
+
+## 它会检查什么
 
 - DNS 是否能够解析
-- 正式 URL 是否能够访问
-- HTTP 状态码
+- 真实生产 URL 与最终 HTTP 状态
+- 页面是否包含指定关键文本，避免“200 但页面错了”
 - 重定向后的最终 URL
-- 页面是否包含指定关键文本
 - Cloudflare Challenge / WAF 常见阻断特征
+- TLS 证书链与剩余有效期
+- 同源 JS / CSS 是否 404、5xx 或错误返回 HTML
 - `CF-Ray`、`CF-Cache-Status` 和 Server 响应信息
-- `robots.txt`
-- `sitemap.xml`
+- `robots.txt` 与 `sitemap.xml`
 - 常见安全响应头
-- 请求耗时
-- 失败自动重试
-- JSON 输出
+- 请求耗时、失败重试、JSON 输出
 - GitHub Actions Job Summary
 
-> ProdDoctor 当前进行的是 HTTP 层检查，不会执行页面中的 JavaScript。需要浏览器渲染、Console Error、截图和前端资源检查的功能仍在后续计划中。
+> v0.2 仍然是 HTTP 层生产验收，不执行浏览器 JavaScript。浏览器渲染、Console Error 和截图属于后续版本。
 
 ---
 
@@ -229,8 +241,12 @@ jobs:
 |---|---|---|---|
 | `url` | 是 | 无 | 要检查的正式 URL |
 | `expect` | 否 | 空 | 页面必须包含的文本 |
+| `status` | 否 | 空 | 最终 HTTP 状态必须精确匹配 |
 | `retries` | 否 | GitHub Action：`2`；CLI：`1` | 失败后额外重试次数 |
 | `timeout` | 否 | `15000` | 单次请求超时，单位毫秒 |
+| `check_assets` | 否 | `true` | 检查同源 JS/CSS |
+| `max_assets` | 否 | `20` | 最多检查的同源 JS/CSS 数量 |
+| `tls_warn_days` | 否 | `14` | TLS 剩余多少天时开始提示 |
 
 ### retries 怎么计算？
 
@@ -563,8 +579,6 @@ ProdDoctor 本身不会修改 Cloudflare 配置，只负责从公网检查结果
 - Playwright
 - 页面截图
 - Console Error 检测
-- 静态资源 404 扫描
-- TLS 证书到期时间
 - Lighthouse / Core Web Vitals
 - 登录态页面
 - 自定义请求 Header
@@ -628,8 +642,6 @@ npm test
 - [ ] Playwright 浏览器渲染检查
 - [ ] 自动截图并上传为 GitHub Actions Artifact
 - [ ] JavaScript Console Error 检测
-- [ ] 静态资源 404 检测
-- [ ] TLS 证书到期检查
 - [ ] 多 URL 批量检查
 - [ ] Lighthouse / Core Web Vitals
 - [ ] PR 评论报告
