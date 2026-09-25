@@ -34,13 +34,16 @@ Real custom domain ❌
 - Cloudflare Challenge / WAF 常见阻断特征
 - TLS 证书链与剩余有效期
 - 同源 JS / CSS 是否 404、5xx 或错误返回 HTML
+- 可选 Playwright + Chromium 真浏览器渲染检查
+- 未捕获 JavaScript 异常、关键同源请求失败和渲染后文本校验
+- 浏览器整页截图 Artifact
 - `CF-Ray`、`CF-Cache-Status` 和 Server 响应信息
 - `robots.txt` 与 `sitemap.xml`
 - 常见安全响应头
 - 请求耗时、失败重试、JSON 输出
 - GitHub Actions Job Summary
 
-> v0.2 仍然是 HTTP 层生产验收，不执行浏览器 JavaScript。浏览器渲染、Console Error 和截图属于后续版本。
+> v0.3 默认仍保持轻量 HTTP 检查；需要时可以启用 Playwright + Chromium 浏览器模式，检查真实渲染、JavaScript 运行时异常、关键资源加载失败，并自动保存整页截图。
 
 ---
 
@@ -235,18 +238,129 @@ jobs:
 
 ---
 
+# 浏览器模式：检查“HTTP 正常，但页面实际坏了”
+
+HTTP 检查可以确认服务器响应、TLS 和静态资源，但有些问题只有真正执行 JavaScript 后才会出现，例如：
+
+```text
+HTML              ✅ 200
+app.js            ✅ 200
+TLS               ✅
+Browser render    ❌ white screen
+pageerror         ❌ Cannot read properties of undefined
+```
+
+启用浏览器模式：
+
+```yaml
+- uses: WU85745/ProdDoctor@main
+  with:
+    url: https://example.com
+    browser: true
+```
+
+启用后，GitHub Action 会在临时目录安装 Playwright 和 Chromium，不会修改你的项目依赖。
+
+浏览器模式当前会检查：
+
+- 主文档能否在 Chromium 中打开
+- 未捕获的 JavaScript `pageerror`
+- 同源 document / script / stylesheet 请求失败
+- 同源关键资源返回 4xx / 5xx
+- 页面标题
+- 渲染后可见文本长度
+- 可选的渲染后文本 `browser_expect`
+- Console error
+- 整页截图
+
+### 检查渲染后的文字
+
+如果某个文字只有 JavaScript 执行后才会出现，可以使用：
+
+```yaml
+with:
+  url: https://example.com
+  browser: true
+  browser_expect: Dashboard
+```
+
+这和 `expect` 不同：
+
+- `expect` 检查服务器返回的原始 HTML
+- `browser_expect` 检查 Chromium 渲染后的页面可见文本
+
+### Console error 默认只提示
+
+很多网站会因为第三方脚本、浏览器扩展兼容或非关键逻辑产生 Console error。
+
+为了降低误报，默认情况下 Console error 会记录在报告中，但不会让 Workflow 失败。
+
+如果你的项目要求 Console 必须干净：
+
+```yaml
+with:
+  url: https://example.com
+  browser: true
+  browser_fail_console: true
+```
+
+未捕获的 JavaScript `pageerror` 始终属于阻断问题。
+
+### 截图
+
+GitHub Action 中启用浏览器模式后，默认会保存整页截图并上传为 Artifact：
+
+```text
+proddoctor-browser-<job>
+```
+
+Artifact 默认保留 7 天。
+
+不需要截图时：
+
+```yaml
+with:
+  url: https://example.com
+  browser: true
+  upload_screenshot: false
+```
+
+### 浏览器模式为什么不是默认开启？
+
+浏览器检查需要下载并启动 Chromium，会明显增加 Action 运行时间和资源占用。
+
+所以 ProdDoctor 保持两层模式：
+
+```text
+默认模式
+DNS + HTTP + TLS + JS/CSS + Cloudflare
+        ↓
+需要更深检查时
+Playwright + Chromium
+```
+
+这样简单站点不需要承担浏览器测试成本，而前端应用可以打开更完整的生产验收。
+
+---
+
 # 参数说明
 
 | 参数 | 是否必须 | 默认值 | 作用 |
 |---|---|---|---|
 | `url` | 是 | 无 | 要检查的正式 URL |
-| `expect` | 否 | 空 | 页面必须包含的文本 |
+| `expect` | 否 | 空 | 原始 HTML 必须包含的文本 |
 | `status` | 否 | 空 | 最终 HTTP 状态必须精确匹配 |
 | `retries` | 否 | GitHub Action：`2`；CLI：`1` | 失败后额外重试次数 |
-| `timeout` | 否 | `15000` | 单次请求超时，单位毫秒 |
+| `timeout` | 否 | `15000` | 单次 HTTP 请求超时，单位毫秒 |
 | `check_assets` | 否 | `true` | 检查同源 JS/CSS |
 | `max_assets` | 否 | `20` | 最多检查的同源 JS/CSS 数量 |
 | `tls_warn_days` | 否 | `14` | TLS 剩余多少天时开始提示 |
+| `browser` | 否 | `false` | 启用 Playwright + Chromium |
+| `browser_expect` | 否 | 空 | 渲染后可见文本必须包含的内容 |
+| `browser_timeout` | 否 | `30000` | 浏览器导航超时，毫秒 |
+| `browser_settle` | 否 | `750` | DOMContentLoaded 后额外等待，毫秒 |
+| `browser_fail_console` | 否 | `false` | Console error 是否阻断 |
+| `upload_screenshot` | 否 | `true` | 浏览器模式是否上传截图 Artifact |
 
 ### retries 怎么计算？
 
@@ -270,7 +384,7 @@ retries: 2
 
 # 方法二：在电脑上直接运行
 
-ProdDoctor 没有第三方 npm 依赖，因此不需要先执行 `npm install`。
+默认 HTTP 模式没有第三方 npm 运行时依赖，因此不需要先执行 `npm install`。浏览器模式需要 Playwright；在 GitHub Action 中会自动安装，本地使用时需要手动安装。
 
 ## 第 1 步：确认 Node.js 版本
 
@@ -325,6 +439,32 @@ node ./bin/proddoctor.mjs https://example.com \
 ```bash
 node ./bin/proddoctor.mjs https://example.com \
   --retries 2
+```
+
+## 浏览器模式（本地）
+
+先安装 Playwright：
+
+```bash
+npm install --no-save playwright
+npx playwright install chromium
+```
+
+然后运行：
+
+```bash
+node ./bin/proddoctor.mjs https://example.com \
+  --browser \
+  --browser-expect "Example Domain" \
+  --browser-screenshot ./production.png
+```
+
+如果希望任何 Console error 都让检查失败：
+
+```bash
+node ./bin/proddoctor.mjs https://example.com \
+  --browser \
+  --browser-fail-console
 ```
 
 ## 第 6 步：修改超时时间
@@ -388,6 +528,12 @@ node ./bin/proddoctor.mjs https://example.com \
 3. 最终 HTTP 状态不正常
 4. 配置了 `expect`，但页面中找不到指定文本
 5. 检测到典型的 Cloudflare Challenge / WAF 阻断响应
+6. TLS 证书链校验失败
+7. 同源 JS/CSS 不可用或错误返回 HTML
+8. 启用浏览器模式后出现未捕获 JavaScript 异常
+9. 浏览器关键同源 document / script / stylesheet 请求失败或返回 4xx/5xx
+10. `browser_expect` 未出现在渲染后的可见文本中
+11. 开启 `browser_fail_console` 后出现 Console error
 
 以下项目目前属于提示，不会单独让检查失败：
 
@@ -575,10 +721,10 @@ ProdDoctor 本身不会修改 Cloudflare 配置，只负责从公网检查结果
 
 当前版本暂时不包含：
 
-- JavaScript 浏览器渲染
-- Playwright
-- 页面截图
-- Console Error 检测
+- 登录后操作流程与表单交互脚本
+- 多浏览器矩阵（当前使用 Chromium）
+- 移动设备预设与多 viewport 矩阵
+- Playwright Trace / Video
 - Lighthouse / Core Web Vitals
 - 登录态页面
 - 自定义请求 Header
@@ -597,6 +743,9 @@ ProdDoctor/
 │   └── proddoctor.mjs
 ├── src/
 │   ├── checker.mjs
+│   ├── assets.mjs
+│   ├── tls.mjs
+│   ├── browser.mjs
 │   └── report.mjs
 ├── test/
 │   └── checker.test.mjs
@@ -604,7 +753,8 @@ ProdDoctor/
 │   └── production-check.yml
 └── .github/workflows/
     ├── test.yml
-    └── action-smoke.yml
+    ├── action-smoke.yml
+    └── browser-smoke.yml
 ```
 
 ---
@@ -628,10 +778,14 @@ npm run check
 npm test
 ```
 
-仓库还包含一个真实 GitHub Action 烟雾测试，会分别验证：
+仓库包含真实 GitHub Action 烟雾测试，分别验证：
 
-- 只配置 `url` 的最简用法
-- 同时配置 `url` 和 `expect` 的用法
+- 默认轻量模式
+- `expect + status`
+- 关闭静态资源检查
+- Playwright + Chromium 真浏览器模式
+- `browser_expect`
+- 浏览器截图 Artifact
 
 ---
 
