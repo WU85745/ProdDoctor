@@ -12,6 +12,7 @@ on:
       - src/**
       - test/**
       - .github/workflows/action-smoke.yml
+      - .github/workflows/release-please.yml
   pull_request:
     paths:
       - action.yml
@@ -19,6 +20,7 @@ on:
       - src/**
       - test/**
       - .github/workflows/action-smoke.yml
+      - .github/workflows/release-please.yml
   workflow_dispatch:
 
 permissions:
@@ -28,7 +30,7 @@ jobs:
   smoke:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Minimal usage with current defaults
         uses: ./

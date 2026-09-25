@@ -55,8 +55,8 @@ changed = updateFile('README.md', (input) => {
   );
 
   text = text.replace(
-    /WU85745\/ProdDoctor@v\d+\.\d+\.\d+/g,
-    `WU85745/ProdDoctor@v${version}`
+    /((?:[\w.-]+\/ProdDoctor|`)@)v\d+\.\d+\.\d+/g,
+    `$1v${version}`
   );
 
   text = replaceRequired(
@@ -101,7 +101,6 @@ for (const path of ['examples/production-check.yml', 'examples/browser-check.yml
   changed = updateFile(path, (input) =>
     input
       .replace(/v\d+\.\d+\.\d+/g, `v${version}`)
-      .replace(/WU85745\/ProdDoctor@v\d+\.\d+\.\d+/g, `WU85745/ProdDoctor@v${version}`)
   ) || changed;
 }
 
@@ -118,8 +117,8 @@ changed = updateFile('src/checker.mjs', (input) => {
   let text = input;
   text = replaceRequired(
     text,
-    /ProdDoctor\/\d+\.\d+\.\d+ \(\+https:\/\/github\.com\/WU85745\/ProdDoctor\)/,
-    `ProdDoctor/${version} (+https://github.com/WU85745/ProdDoctor)`,
+    /ProdDoctor\/\d+\.\d+\.\d+( \(\+https:\/\/github\.com\/[\w.-]+\/ProdDoctor\))/,
+    `ProdDoctor/${version}$1`,
     'HTTP User-Agent'
   );
   text = replaceRequired(
@@ -134,8 +133,8 @@ changed = updateFile('src/checker.mjs', (input) => {
 changed = updateFile('src/assets.mjs', (input) =>
   replaceRequired(
     input,
-    /ProdDoctor\/\d+\.\d+\.\d+ \(\+https:\/\/github\.com\/WU85745\/ProdDoctor\)/,
-    `ProdDoctor/${version} (+https://github.com/WU85745/ProdDoctor)`,
+    /ProdDoctor\/\d+\.\d+\.\d+( \(\+https:\/\/github\.com\/[\w.-]+\/ProdDoctor\))/,
+    `ProdDoctor/${version}$1`,
     'asset User-Agent'
   )
 ) || changed;

@@ -29,6 +29,10 @@ inputs:
     description: '是否检查同源 JS/CSS 静态资源'
     required: false
     default: 'true'
+  max_body_bytes:
+    description: 'HTTP response body byte limit; 0 preserves unlimited legacy behavior'
+    required: false
+    default: '0'
   max_assets:
     description: '最多检查的同源 JS/CSS 数量'
     required: false
@@ -75,11 +79,19 @@ inputs:
     required: false
     default: 'true'
 
+outputs:
+  evidence_dir:
+    description: "This invocation's isolated evidence directory (browser mode only)"
+    value: ${{ steps.evidence.outputs.dir }}
+  evidence_name:
+    description: "This invocation's unique artifact name (browser mode only)"
+    value: ${{ steps.evidence.outputs.name }}
+
 runs:
   using: 'composite'
   steps:
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
       with:
         node-version: '20'
 
@@ -143,6 +155,15 @@ runs:
 
         echo "PRODDOCTOR_PLAYWRIGHT_DIR=$PW_DIR" >> "$GITHUB_ENV"
 
+    - name: Prepare isolated evidence directory
+      id: evidence
+      if: ${{ inputs.browser == 'true' }}
+      shell: bash
+      run: |
+        EVIDENCE_DIR="$(mktemp -d "$RUNNER_TEMP/proddoctor-evidence-XXXXXXXX")"
+        echo "dir=$EVIDENCE_DIR" >> "$GITHUB_OUTPUT"
+        echo "name=proddoctor-evidence-${GITHUB_JOB}-$(basename "$EVIDENCE_DIR")" >> "$GITHUB_OUTPUT"
+
     - name: ProdDoctor production check
       shell: bash
       env:
@@ -151,6 +172,7 @@ runs:
         PROD_DOCTOR_STATUS: ${{ inputs.status }}
         PROD_DOCTOR_RETRIES: ${{ inputs.retries }}
         PROD_DOCTOR_TIMEOUT: ${{ inputs.timeout }}
+        PROD_DOCTOR_MAX_BODY_BYTES: ${{ inputs.max_body_bytes }}
         PROD_DOCTOR_CHECK_ASSETS: ${{ inputs.check_assets }}
         PROD_DOCTOR_MAX_ASSETS: ${{ inputs.max_assets }}
         PROD_DOCTOR_TLS_WARN_DAYS: ${{ inputs.tls_warn_days }}
@@ -163,11 +185,13 @@ runs:
         PROD_DOCTOR_BROWSER_TRACE: ${{ inputs.browser_trace }}
         PROD_DOCTOR_UPLOAD_SCREENSHOT: ${{ inputs.upload_screenshot }}
         PROD_DOCTOR_UPLOAD_REPORT: ${{ inputs.upload_report }}
+        PROD_DOCTOR_EVIDENCE_DIR: ${{ steps.evidence.outputs.dir }}
       run: |
         args=(
           "$PROD_DOCTOR_URL"
           --retries "$PROD_DOCTOR_RETRIES"
           --timeout "$PROD_DOCTOR_TIMEOUT"
+          --max-body-bytes "$PROD_DOCTOR_MAX_BODY_BYTES"
           --max-assets "$PROD_DOCTOR_MAX_ASSETS"
           --tls-warn-days "$PROD_DOCTOR_TLS_WARN_DAYS"
         )
@@ -185,8 +209,7 @@ runs:
         fi
 
         if [ "$PROD_DOCTOR_BROWSER" = "true" ]; then
-          EVIDENCE_DIR="$GITHUB_WORKSPACE/proddoctor-evidence"
-          mkdir -p "$EVIDENCE_DIR"
+          EVIDENCE_DIR="$PROD_DOCTOR_EVIDENCE_DIR"
 
           args+=(
             --browser
@@ -223,10 +246,10 @@ runs:
         node "$GITHUB_ACTION_PATH/bin/proddoctor.mjs" "${args[@]}"
 
     - name: Upload ProdDoctor evidence
-      if: ${{ always() && inputs.browser == 'true' && (inputs.upload_screenshot == 'true' || inputs.upload_report == 'true' || inputs.browser_trace != 'off') }}
-      uses: actions/upload-artifact@v4
+      if: ${{ always() && steps.evidence.outputs.dir != '' && inputs.browser == 'true' && (inputs.upload_screenshot == 'true' || inputs.upload_report == 'true' || inputs.browser_trace != 'off') }}
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       with:
-        name: proddoctor-evidence-${{ github.job }}
-        path: ${{ github.workspace }}/proddoctor-evidence/*
+        name: ${{ steps.evidence.outputs.name }}
+        path: ${{ steps.evidence.outputs.dir }}/*
         if-no-files-found: warn
         retention-days: 7

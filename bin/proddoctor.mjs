@@ -15,6 +15,7 @@ function usage() {
   --expect <文本>              要求原始 HTML 包含指定文本
   --status <状态码>            要求最终 HTTP 状态精确匹配，例如 200
   --timeout <毫秒>            单次 HTTP 请求超时，默认 15000
+  --max-body-bytes <字节>     响应正文大小上限，默认 0（保持兼容，不限大小）
   --retries <次数>            失败后的重试次数，默认 1
   --no-assets                 不检查同源 JS/CSS 静态资源
   --max-assets <数量>         最多检查的静态资源数量，默认 20
@@ -36,6 +37,7 @@ function usage() {
   --json-file <路径>          保存 JSON 报告
   --html-report <路径>        保存独立 HTML 报告
   --help                      显示帮助
+  --version                   显示版本
 
 示例：
   proddoctor https://example.com
@@ -48,6 +50,11 @@ function usage() {
 }
 
 const args = process.argv.slice(2);
+if (args.length === 1 && ['--version', '-V'].includes(args[0])) {
+  const pkg = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  console.log(pkg.version);
+  process.exit(0);
+}
 if (!args.length || args.includes('--help') || args.includes('-h')) {
   usage();
   process.exit(args.length ? 0 : 1);
@@ -76,12 +83,32 @@ async function writeTextFile(filePath, content) {
 }
 
 try {
+  const valueFlags = new Set([
+    '--expect', '--status', '--timeout', '--max-body-bytes', '--retries', '--max-assets', '--tls-warn-days',
+    '--browser-expect', '--browser-timeout', '--browser-settle', '--browser-profile',
+    '--browser-screenshot', '--browser-trace', '--browser-trace-path', '--json-file', '--html-report'
+  ]);
+  const booleanFlags = new Set(['--no-assets', '--browser', '--browser-fail-console', '--json']);
+  if (url.startsWith('-')) throw new Error('请先提供 URL；--version 用于显示版本');
+  const seenFlags = new Set();
+  for (let i = 1; i < args.length; i++) {
+    const flag = args[i];
+    if (!valueFlags.has(flag) && !booleanFlags.has(flag)) throw new Error(`未知参数：${flag}`);
+    if (seenFlags.has(flag)) throw new Error(`重复参数：${flag}`);
+    seenFlags.add(flag);
+    if (valueFlags.has(flag)) {
+      value(flag, null, { allowEmpty: ['--expect', '--browser-expect'].includes(flag) });
+      i++;
+    }
+  }
   const parsedUrl = new URL(url.includes('://') ? url : `https://${url}`);
   if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
     throw new Error('URL 仅支持 http:// 或 https://');
   }
 
   const timeoutMs = Number(value('--timeout', '15000'));
+  const maxBodyBytes = Number(value('--max-body-bytes', '0'));
+  if (!Number.isSafeInteger(maxBodyBytes) || maxBodyBytes < 0) throw new Error('--max-body-bytes 必须是非负安全整数');
   const retries = Number(value('--retries', '1'));
   const maxAssets = Number(value('--max-assets', '20'));
   const tlsWarnDays = Number(value('--tls-warn-days', '14'));
@@ -100,8 +127,8 @@ try {
   const browserTraceMode = value('--browser-trace', 'off');
   const browserTracePath = value('--browser-trace-path', null);
 
-  if (!Number.isFinite(timeoutMs) || timeoutMs < 100) {
-    throw new Error('--timeout 必须是 >= 100 的数字');
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 2147483647) {
+    throw new Error('--timeout 必须是 100 到 2147483647 的整数');
   }
   if (!Number.isInteger(retries) || retries < 0 || retries > 10) {
     throw new Error('--retries 必须是 0 到 10 的整数');
@@ -145,6 +172,7 @@ try {
     expected,
     expectedStatus,
     timeoutMs,
+    maxBodyBytes,
     retries,
     checkAssets,
     maxAssets,

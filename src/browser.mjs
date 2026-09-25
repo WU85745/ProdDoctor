@@ -221,7 +221,8 @@ export async function runBrowserCheck(rawUrl, options = {}) {
     }
 
     if (traceStarted) {
-      const keepTrace = traceMode === 'always' || (traceMode === 'on-failure' && failures.length > 0);
+      const keepTrace = traceMode === 'always'
+        || (traceMode === 'on-failure' && (failures.length > 0 || options.retainTrace));
       const traceResult = await stopTrace(context, {
         traceMode,
         tracePath,

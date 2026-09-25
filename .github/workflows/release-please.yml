@@ -17,136 +17,190 @@ concurrency:
 
 jobs:
   release:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
+    env:
+      GH_REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Run Release Please
-        id: release
-        # googleapis/release-please-action v5.0.0 pinned to its immutable commit.
-        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
-
-      - name: Checkout released commit
-        if: ${{ steps.release.outputs.release_created == 'true' }}
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.release.outputs.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
-
-      - name: Move floating major tag
-        if: ${{ steps.release.outputs.release_created == 'true' }}
-        shell: bash
-        env:
-          RELEASE_SHA: ${{ steps.release.outputs.sha }}
-          RELEASE_MAJOR: ${{ steps.release.outputs.major }}
-        run: |
-          set -euo pipefail
-
-          if [ -z "$RELEASE_SHA" ] || [ -z "$RELEASE_MAJOR" ]; then
-            echo "Release Please did not provide release SHA/major."
-            exit 1
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          FLOATING_TAG="v$RELEASE_MAJOR"
-          git tag -fa "$FLOATING_TAG" "$RELEASE_SHA" -m "ProdDoctor $FLOATING_TAG"
-          git push origin "refs/tags/$FLOATING_TAG" --force
-
-      - name: Read Release PR metadata
-        if: ${{ steps.release.outputs.prs_created == 'true' }}
-        id: pr
-        shell: bash
-        env:
-          RELEASE_PR: ${{ steps.release.outputs.pr }}
-        run: |
-          set -euo pipefail
-          echo "number=$(jq -r '.number' <<< "$RELEASE_PR")" >> "$GITHUB_OUTPUT"
-          echo "head=$(jq -r '.headBranchName' <<< "$RELEASE_PR")" >> "$GITHUB_OUTPUT"
-
-      - name: Keep Release PR in draft while validating
-        if: ${{ steps.release.outputs.prs_created == 'true' }}
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ steps.pr.outputs.number }}
-        run: gh pr ready "$PR_NUMBER" --undo || true
-
-      - name: Checkout Release PR
-        if: ${{ steps.release.outputs.prs_created == 'true' }}
-        uses: actions/checkout@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          ref: ${{ steps.pr.outputs.head }}
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          node-version: '20'
 
-      - name: Sync all public version references
-        if: ${{ steps.release.outputs.prs_created == 'true' }}
-        shell: bash
-        run: npm run release:sync
-
-      - name: Commit synchronized release metadata
-        if: ${{ steps.release.outputs.prs_created == 'true' }}
+      # Validate BEFORE Release Please can publish any tag/release.
+      - name: Validate main before publication
         shell: bash
         run: |
           set -euo pipefail
+          npm run check
+          VERSION="$(node -p "require('./package.json').version")"
+          LATEST="$(git tag --merged HEAD --list 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)"
+          if [ "v$VERSION" != "$LATEST" ]; then npm run release:policy; fi
 
-          if git diff --quiet; then
-            echo "Version references already synchronized."
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md package.json bin src test examples .github/workflows .release-please-manifest.json
-          git commit -m "chore: sync release version references"
-          git push origin HEAD:"${{ steps.pr.outputs.head }}"
-
-      - name: Validate release version policy
-        if: ${{ steps.release.outputs.prs_created == 'true' }}
-        run: npm run release:policy
-
-      - name: Run unit and consistency checks
-        if: ${{ steps.release.outputs.prs_created == 'true' }}
-        run: npm run check
-
-      - name: Release gate - lightweight Action smoke
-        if: ${{ steps.release.outputs.prs_created == 'true' }}
+      - name: Main lightweight smoke
         uses: ./
         with:
           url: https://example.com
           expect: Example Domain
           status: 200
-          retries: 1
-          timeout: 15000
-          check_assets: true
-
-      - name: Release gate - Chromium smoke
-        if: ${{ steps.release.outputs.prs_created == 'true' }}
+      - name: Main Chromium smoke
+        id: main-browser
         uses: ./
         with:
           url: https://example.com
-          status: 200
           browser: true
           browser_expect: Example Domain
-          browser_timeout: 30000
-          browser_settle: 250
           browser_profile: mobile
-          browser_trace: on-failure
-          upload_screenshot: true
-          upload_report: true
-
-      - name: Mark validated Release PR ready
-        if: ${{ steps.release.outputs.prs_created == 'true' }}
-        shell: bash
+          browser_trace: always
+      - name: Check main evidence
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVIDENCE_DIR: ${{ steps.main-browser.outputs.evidence_dir }}
+        run: |
+          test -s "$EVIDENCE_DIR/report.json"
+          test -s "$EVIDENCE_DIR/report.html"
+          test -s "$EVIDENCE_DIR/browser.png"
+          test -s "$EVIDENCE_DIR/trace.zip"
+
+      - name: Refuse publication from an outdated run
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: test "$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)" = "$EXPECTED_SHA"
+
+      - name: Run Release Please
+        id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target-branch: main
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+      # Idempotent: repair vN on retry too; NEVER move concrete vN.N.N tags.
+      - name: Reconcile floating major tag from latest published release
+        shell: bash
+        run: |
+          set -euo pipefail
+          RELEASE_TAG="$(gh api "repos/$GH_REPO/releases/latest" --jq .tag_name)"
+          [[ "$RELEASE_TAG" =~ ^v([0-9]+)\.[0-9]+\.[0-9]+$ ]]
+          FLOATING_TAG="v${BASH_REMATCH[1]}"
+          git fetch origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+          RELEASE_SHA="$(git rev-parse "$RELEASE_TAG^{commit}")"
+          git merge-base --is-ancestor "$RELEASE_SHA" HEAD
+          CURRENT="$(git ls-remote origin "refs/tags/$FLOATING_TAG" | cut -f1)"
+          git push --force-with-lease="refs/tags/$FLOATING_TAG:$CURRENT" origin "$RELEASE_SHA:refs/tags/$FLOATING_TAG"
+
+      - name: Read Release PR metadata
+        if: steps.release.outputs.prs_created == 'true'
+        id: pr
+        env:
+          RELEASE_PR: ${{ steps.release.outputs.pr }}
+        run: |
+          set -euo pipefail
+          NUMBER="$(jq -er '.number | select(type == "number")' <<< "$RELEASE_PR")"
+          HEAD="$(jq -er '.headBranchName | select(type == "string" and startswith("release-please--"))' <<< "$RELEASE_PR")"
+          echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
+          echo "head=$HEAD" >> "$GITHUB_OUTPUT"
+
+      - name: Keep Release PR in draft while validating
+        if: steps.pr.outputs.number != ''
+        env:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
         run: |
           set -euo pipefail
-          gh pr ready "$PR_NUMBER"
-          gh pr comment "$PR_NUMBER" --body "✅ Automated release gate passed: version policy, unit checks, Action smoke, and Chromium smoke all succeeded. This Release PR is ready for final human review and merge."
+          if [ "$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json isDraft --jq .isDraft)" != true ]; then
+            gh pr ready "$PR_NUMBER" --repo "$GH_REPO" --undo
+          fi
+
+      - name: Checkout Release PR
+        if: steps.pr.outputs.number != ''
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ steps.pr.outputs.head }}
+          fetch-depth: 0
+
+      - name: Sync public version references
+        if: steps.pr.outputs.number != ''
+        env:
+          PR_HEAD: ${{ steps.pr.outputs.head }}
+        run: |
+          set -euo pipefail
+          npm run release:sync
+          if ! git diff --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add README.md package.json bin src test examples .github/workflows .release-please-manifest.json
+            git commit -m 'chore: sync release version references'
+            git push origin "HEAD:$PR_HEAD"
+          fi
+
+      - name: Attach release gate to exact PR commit
+        if: steps.pr.outputs.number != ''
+        id: gate
+        run: |
+          set -euo pipefail
+          SHA="$(git rev-parse HEAD)"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          gh api --method POST "repos/$GH_REPO/statuses/$SHA" -f state=pending -f context='release-gate' -f description='Validating this exact release commit'
+
+      - name: Validate release version policy and unit checks
+        if: steps.gate.outputs.sha != ''
+        run: npm run release:policy && npm run check
+
+      - name: Release gate - lightweight Action smoke
+        if: steps.gate.outputs.sha != ''
+        uses: ./
+        with:
+          url: https://example.com
+          expect: Example Domain
+          status: 200
+
+      - name: Release gate - Chromium smoke
+        if: steps.gate.outputs.sha != ''
+        id: pr-browser
+        uses: ./
+        with:
+          url: https://example.com
+          browser: true
+          browser_expect: Example Domain
+          browser_profile: mobile
+          browser_trace: always
+
+      - name: Verify release evidence and unchanged PR head
+        if: steps.gate.outputs.sha != ''
+        env:
+          EVIDENCE_DIR: ${{ steps.pr-browser.outputs.evidence_dir }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          EXPECTED_SHA: ${{ steps.gate.outputs.sha }}
+        run: |
+          set -euo pipefail
+          test -s "$EVIDENCE_DIR/browser.png"
+          test -s "$EVIDENCE_DIR/report.html"
+          test -s "$EVIDENCE_DIR/report.json"
+          test -s "$EVIDENCE_DIR/trace.zip"
+          test "$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json headRefOid --jq .headRefOid)" = "$EXPECTED_SHA"
+
+      - name: Publish exact-SHA release gate result
+        if: always() && steps.gate.outputs.sha != ''
+        env:
+          GATE_SHA: ${{ steps.gate.outputs.sha }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          STATE=failure
+          if [ "$JOB_STATUS" = success ]; then STATE=success; fi
+          gh api --method POST "repos/$GH_REPO/statuses/$GATE_SHA" -f "state=$STATE" -f context='release-gate' -f "description=Release gate $STATE" -f "target_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+      - name: Mark validated Release PR ready
+        if: success() && steps.gate.outputs.sha != ''
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          GATE_SHA: ${{ steps.gate.outputs.sha }}
+        run: |
+          set -euo pipefail
+          gh pr ready "$PR_NUMBER" --repo "$GH_REPO"
+          gh pr comment "$PR_NUMBER" --repo "$GH_REPO" --body "Automated release gate passed for $GATE_SHA: version policy, unit tests, Action smoke, Chromium smoke and evidence checks. Ready for final review and merge."

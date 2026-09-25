@@ -55,6 +55,7 @@ function headerGrade(headers) {
 
 async function fetchOnce(url, {
   timeoutMs,
+  maxBodyBytes = 0,
   expected = '',
   expectedStatus = null,
   method = 'GET'
@@ -66,15 +67,15 @@ async function fetchOnce(url, {
       method,
       redirect: 'follow',
       headers: {
-        'user-agent': 'ProdDoctor/1.4.0 (+https://github.com/WU85745/ProdDoctor)',
+        'user-agent': 'ProdDoctor/1.4.0 (+https://github.com/lucaswenbo/ProdDoctor)',
         accept: 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
         'cache-control': 'no-cache'
       },
       signal: AbortSignal.timeout(timeoutMs)
     });
 
+    const body = method === 'HEAD' ? '' : await readBody(response, maxBodyBytes);
     const elapsedMs = Math.round(performance.now() - started);
-    const body = method === 'HEAD' ? '' : await response.text();
     const verdict = classifyResponse({
       status: response.status,
       body,
@@ -116,6 +117,30 @@ async function fetchOnce(url, {
   }
 }
 
+async function readBody(response, maxBytes) {
+  if (!maxBytes || !response.body) return response.text();
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const chunks = [];
+  let size = 0;
+  try {
+    while (true) {
+      const {value, done} = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > maxBytes) {
+        await reader.cancel();
+        throw new Error(`Response body exceeds max_body_bytes (${maxBytes})`);
+      }
+      chunks.push(decoder.decode(value, {stream: true}));
+    }
+    chunks.push(decoder.decode());
+    return chunks.join('');
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 async function retryFetch(url, options) {
   const attempts = [];
 
@@ -133,10 +158,11 @@ async function retryFetch(url, options) {
   return { ...attempts.at(-1), attempts: attempts.length };
 }
 
-async function checkAuxiliary(origin, pathname, timeoutMs) {
+async function checkAuxiliary(origin, pathname, timeoutMs, maxBodyBytes) {
   const url = new URL(pathname, origin).href;
   const result = await fetchOnce(url, {
     timeoutMs,
+    maxBodyBytes,
     expected: '',
     expectedStatus: null
   });
@@ -170,6 +196,11 @@ export async function runChecks(rawUrl, options = {}) {
   }
 
   const timeoutMs = options.timeoutMs ?? 15000;
+  // Opt in to bounded response reads without tightening existing default behavior.
+  const maxBodyBytes = options.maxBodyBytes ?? 0;
+  if (!Number.isSafeInteger(maxBodyBytes) || maxBodyBytes < 0) {
+    throw new Error('maxBodyBytes 必须是非负安全整数');
+  }
   const retries = options.retries ?? 1;
   const expected = options.expected ?? '';
   const expectedStatus = options.expectedStatus ?? null;
@@ -207,6 +238,7 @@ export async function runChecks(rawUrl, options = {}) {
 
   const page = await retryFetch(target.href, {
     timeoutMs,
+    maxBodyBytes,
     retries,
     expected,
     expectedStatus
@@ -216,8 +248,8 @@ export async function runChecks(rawUrl, options = {}) {
   const finalOrigin = new URL(finalUrl).origin;
 
   const [robots, sitemap, tls] = await Promise.all([
-    checkAuxiliary(finalOrigin, '/robots.txt', timeoutMs),
-    checkAuxiliary(finalOrigin, '/sitemap.xml', timeoutMs),
+    checkAuxiliary(finalOrigin, '/robots.txt', timeoutMs, maxBodyBytes),
+    checkAuxiliary(finalOrigin, '/sitemap.xml', timeoutMs, maxBodyBytes),
     inspectTls(finalUrl, { timeoutMs, warnDays: tlsWarnDays })
   ]);
 
@@ -248,11 +280,15 @@ export async function runChecks(rawUrl, options = {}) {
       settleMs: browserSettleMs,
       profile: browserProfile,
       traceMode: browserTraceMode,
-      tracePath: browserTracePath
+      tracePath: browserTracePath,
+      retainTrace: !dnsResult.ok || !page.ok || !tls.ok || !assets.ok
     });
   }
 
   const warnings = [];
+  for (const asset of assets.results) {
+    if (asset.warning) warnings.push(asset.warning);
+  }
 
   if (target.protocol !== 'https:') {
     warnings.push('入口 URL 不是 HTTPS。');

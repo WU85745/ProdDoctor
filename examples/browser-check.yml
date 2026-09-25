@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: WU85745/ProdDoctor@v1.4.0
+      - uses: lucaswenbo/ProdDoctor@v1.4.0
         with:
           url: https://example.com
           status: 200
