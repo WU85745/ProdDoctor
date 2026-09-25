@@ -22,7 +22,7 @@ if (manifest['.'] !== pkg.version) {
   throw new Error(`manifest 与 package.json 版本不一致：${manifest['.']} != ${pkg.version}`);
 }
 
-const allTags = execFileSync('git', ['tag', '--list'], { encoding: 'utf8' })
+const allTags = execFileSync('git', ['tag', '--merged', 'HEAD', '--list'], { encoding: 'utf8' })
   .trim()
   .split(/\r?\n/)
   .filter(Boolean)
@@ -57,7 +57,7 @@ const commits = log
 
 const hasBreaking = commits.some((entry) =>
   /^[a-z]+(?:\([^)]+\))?!:/m.test(entry) ||
-  /^BREAKING CHANGE:/m.test(entry)
+  /^BREAKING[ -]CHANGE:/m.test(entry)
 );
 const hasFeature = commits.some((entry) => /^feat(?:\([^)]+\))?:/m.test(entry));
 const hasPatch = commits.some((entry) => /^(?:fix|perf)(?:\([^)]+\))?:/m.test(entry));

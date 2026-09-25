@@ -6,7 +6,7 @@
 
 ## [1.4.0]
 
-> 当前建议用户引用的具体版本为 `v1.4.0`。只有在对应 Git tag 已发布后，`WU85745/ProdDoctor@v1.4.0` 才会成为可解析的 Action 引用。
+> 当前建议用户引用的具体版本为 `v1.4.0`。只有在对应 Git tag 已发布后，`lucaswenbo/ProdDoctor@v1.4.0` 才会成为可解析的 Action 引用。
 
 ### Added
 

@@ -1,8 +1,8 @@
 # ProdDoctor
 
-[![Test ProdDoctor](https://github.com/WU85745/ProdDoctor/actions/workflows/test.yml/badge.svg)](https://github.com/WU85745/ProdDoctor/actions/workflows/test.yml)
-[![Smoke test GitHub Action](https://github.com/WU85745/ProdDoctor/actions/workflows/action-smoke.yml/badge.svg)](https://github.com/WU85745/ProdDoctor/actions/workflows/action-smoke.yml)
-[![Browser smoke test](https://github.com/WU85745/ProdDoctor/actions/workflows/browser-smoke.yml/badge.svg)](https://github.com/WU85745/ProdDoctor/actions/workflows/browser-smoke.yml)
+[![Test ProdDoctor](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/test.yml/badge.svg)](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/test.yml)
+[![Smoke test GitHub Action](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/action-smoke.yml/badge.svg)](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/action-smoke.yml)
+[![Browser smoke test](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/browser-smoke.yml/badge.svg)](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/browser-smoke.yml)
 ![Version](https://img.shields.io/badge/version-v1.4.0-2563eb)
 ![License](https://img.shields.io/badge/license-MIT-16a34a)
 
@@ -21,7 +21,7 @@ ProdDoctor 在部署完成后直接检查用户真正访问到的生产环境。
 当前对外稳定版本为 **v1.4.0**。用户示例默认引用具体版本 `@v1.4.0`；如果 Releases / tag 页面尚未出现该版本，请先不要把这个引用用于实际流水线。
 
 - 功能仍可能较快增加，升级前请先查看 [CHANGELOG.md](CHANGELOG.md)。
-- 一般试用或首次接入，使用 `WU85745/ProdDoctor@v1.4.0`。
+- 一般试用或首次接入，使用 `lucaswenbo/ProdDoctor@v1.4.0`。
 - 生产门禁建议把具体 tag 换成该 tag 对应的**完整 commit SHA**，避免任何引用漂移。
 - `@main` 跟踪最新开发代码，行为可能随时变化，不建议用于生产门禁。
 - 具体版本 tag（例如 `v1.4.0`）发布后禁止移动；补丁修复应发布新的 patch 版本，例如 `v1.4.1`。
@@ -30,7 +30,7 @@ ProdDoctor 在部署完成后直接检查用户真正访问到的生产环境。
 ## 30 秒接入
 
 ```yaml
-- uses: WU85745/ProdDoctor@v1.4.0
+- uses: lucaswenbo/ProdDoctor@v1.4.0
   with:
     url: https://example.com
     expect: My Website
@@ -44,14 +44,14 @@ ProdDoctor 在部署完成后直接检查用户真正访问到的生产环境。
 
 | 引用方式 | 适合场景 | 稳定性 |
 |---|---|---|
-| `WU85745/ProdDoctor@main` | 开发、试用、验证最新代码 | 会随 main 变化，不建议用于生产门禁 |
-| `WU85745/ProdDoctor@v1.4.0` | 推荐入门和一般项目接入 | 具体版本 tag，按项目约定发布后不移动 |
-| `WU85745/ProdDoctor@<commit-sha>` | 生产流水线、严格可复现环境 | 最稳定，精确锁定到一个提交 |
+| `lucaswenbo/ProdDoctor@main` | 开发、试用、验证最新代码 | 会随 main 变化，不建议用于生产门禁 |
+| `lucaswenbo/ProdDoctor@v1.4.0` | 推荐入门和一般项目接入 | 具体版本 tag，按项目约定发布后不移动 |
+| `lucaswenbo/ProdDoctor@<commit-sha>` | 生产流水线、严格可复现环境 | 最稳定，精确锁定到一个提交 |
 
 生产环境建议使用：
 
 ```yaml
-- uses: WU85745/ProdDoctor@<commit-sha>
+- uses: lucaswenbo/ProdDoctor@<commit-sha>
   with:
     url: https://example.com
 ```
@@ -133,7 +133,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: WU85745/ProdDoctor@v1.4.0
+      - uses: lucaswenbo/ProdDoctor@v1.4.0
         with:
           url: https://example.com
 ```
@@ -225,7 +225,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: WU85745/ProdDoctor@v1.4.0
+      - uses: lucaswenbo/ProdDoctor@v1.4.0
         with:
           url: https://example.com
           expect: My Website
@@ -267,7 +267,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       # 在这里放你原本的构建和部署步骤
       # - run: npm ci
@@ -275,7 +275,7 @@ jobs:
       # - run: your-deploy-command
 
       - name: Verify real production domain
-        uses: WU85745/ProdDoctor@v1.4.0
+        uses: lucaswenbo/ProdDoctor@v1.4.0
         with:
           url: https://example.com
           expect: My Website
@@ -302,7 +302,7 @@ pageerror         ❌ Cannot read properties of undefined
 启用浏览器模式：
 
 ```yaml
-- uses: WU85745/ProdDoctor@v1.4.0
+- uses: lucaswenbo/ProdDoctor@v1.4.0
   with:
     url: https://example.com
     browser: true
@@ -360,7 +360,7 @@ with:
 v1.4.0 会把浏览器证据集中放在一个 Artifact 中：
 
 ```text
-proddoctor-evidence-<job>/
+proddoctor-evidence-<job>-<unique-id>/
 ├── browser.png
 ├── report.html
 ├── report.json
@@ -375,6 +375,10 @@ proddoctor-evidence-<job>/
 - `trace.zip`：Playwright Trace，可用于回放页面加载过程、DOM 快照和网络活动
 
 Artifact 默认保留 7 天。
+
+每次调用使用独立临时目录和唯一 Artifact 名称，因此同一 Job 多次调用或 matrix 并行不会互相覆盖。
+需要在后续步骤读取文件时，给 Action 设置 `id: doctor`，然后使用
+`steps.doctor.outputs.evidence_dir`；Artifact 名称可通过 `steps.doctor.outputs.evidence_name` 获取。
 
 ### desktop / mobile
 
@@ -504,6 +508,7 @@ ProdDoctor 按 SemVer 管理对外行为，并尽量让已有 Workflow 在升级
 | `status` | 否 | 空 | 最终 HTTP 状态必须精确匹配 |
 | `retries` | 否 | GitHub Action：`2`；CLI：`1` | 失败后额外重试次数 |
 | `timeout` | 否 | `15000` | 单次 HTTP 请求超时，单位毫秒 |
+| `max_body_bytes` | 否 | `0` | 主页面及辅助文件正文上限；0 保持旧版不限大小，建议不可信目标设为 5242880（5 MiB） |
 | `check_assets` | 否 | `true` | 检查同源 JS/CSS |
 | `max_assets` | 否 | `20` | 最多检查的同源 JS/CSS 数量 |
 | `tls_warn_days` | 否 | `14` | TLS 剩余多少天时开始提示 |
@@ -560,7 +565,7 @@ v20.19.0
 ## 第 2 步：克隆仓库
 
 ```bash
-git clone https://github.com/WU85745/ProdDoctor.git
+git clone https://github.com/lucaswenbo/ProdDoctor.git
 cd ProdDoctor
 ```
 
@@ -979,6 +984,14 @@ ProdDoctor：
 - 只从运行环境向目标 URL 发起公开 HTTP 请求
 
 请不要把包含密码、访问 Token、私有签名或敏感查询参数的 URL 写入公开 GitHub Workflow。
+
+截图、Trace、报告和日志也可能包含页面内容、URL 查询参数及网络响应，请按敏感数据管理。
+不要把来自外部 PR 的任意 URL 直接传给拥有内网访问权限或部署凭据的 runner。
+
+为兼容既有站点，响应大小限制默认关闭。可设置 `max_body_bytes: 5242880`，
+或 CLI 的 `--max-body-bytes 5242880`；超过限制会明确失败，不会把截断正文判为通过。
+不常见的 JS/CSS MIME 类型当前只警告；4xx/5xx 和 HTML fallback 仍按原规则失败。
+资源提取是轻量解析，不是完整浏览器 HTML 解析器；动态加载资源应结合 `browser: true` 验证。
 
 ---
 

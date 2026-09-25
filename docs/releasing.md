@@ -17,7 +17,7 @@ Settings
 
 建议：
 
-- 允许 workflow 获得所需的 write permissions。
+- 仓库默认权限可保持只读；仅 release workflow 显式申请所需写权限。
 - 打开 **Allow GitHub Actions to create and approve pull requests**。
 
 ProdDoctor 的 release workflow 会显式申请：
@@ -71,7 +71,9 @@ BREAKING CHANGE: ...
 
 ## 自动 Release PR 会做什么
 
-当 conventional commit 合并到 `main` 后：
+当提交合并到 `main` 后，先对触发提交执行单元检查、轻量 smoke、Chromium smoke
+和证据文件验证；新版本还须通过版本策略。确认 main 没有前移后才调用 Release Please。
+随后当存在可发布的 conventional commit 时：
 
 1. Release Please 根据从上一个具体版本 tag 之后的提交计算下一版本。
 2. 自动创建或更新一个 **Draft Release PR**。
@@ -92,6 +94,11 @@ BREAKING CHANGE: ...
 9. 运行真实 Chromium smoke。
 10. 全部通过后，workflow 才把 Release PR 从 Draft 改成 Ready，并留言：
     `Automated release gate passed`
+
+由于默认 GITHUB_TOKEN 创建的 PR 不会自动触发其他 Actions，本流程在同一工作流中
+运行门禁，并将 `release-gate` commit status 写到同步后的精确 PR HEAD SHA。
+结束前还会核对远程 PR HEAD 未改变。失败会保留 Draft，不会忽略 Draft 操作错误。
+如果启用 required checks，需要为机器人发布分支配置可满足的检查，不能要求未触发的普通 PR workflow。
 
 此时维护者只需要检查版本号和 CHANGELOG 是否符合预期，然后点 **Merge**。
 
@@ -121,11 +128,14 @@ Release PR 还有一层独立版本策略：
 
 Release Please 在 Release PR 合并后的下一次 `main` push 中自动：
 
-1. 创建不可移动的具体版本 tag，例如 `v1.4.1`
+1. 创建具体版本 tag，例如 `v1.4.1`（流程不覆盖旧 tag；强制不可变仍需要 GitHub 设置）
 2. 创建对应 GitHub Release
 3. 把 Release PR 标记为已发布
 
 ProdDoctor 还会自动更新浮动 major tag：
+
+浮动 tag 从最新已发布的稳定 Release 幂等同步；即使前一次更新失败，重跑也会修复。
+它只更新 `vN`，不会移动 `vN.N.N`。没有发布过稳定版本的新 fork 需要先完成首次发布。
 
 ```text
 v1 → 当前最新的 1.x release commit
@@ -149,6 +159,13 @@ v1       可移动
 ```
 
 ## 不要做的事
+
+### 仓库设置与代码门禁的边界
+
+工作流不会替你开启仓库管理设置。建议单独配置 main 禁止强推/删除、PR 合并规则、
+具体版本 tag 更新/删除限制，或 GitHub immutable releases。不要把“按流程不移动 tag”
+误认为 GitHub 已强制不可变。不要重写已发布版本的提交历史来隐藏邮箱；
+新提交可使用 GitHub noreply 地址。
 
 - 不要手动修改已经发布的具体版本 tag。
 - 不要 force-update `v1.4.0`、`v1.4.1` 等具体 tag。

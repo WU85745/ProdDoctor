@@ -14,6 +14,7 @@ on:
       - src/report.mjs
       - src/html-report.mjs
       - .github/workflows/browser-smoke.yml
+      - .github/workflows/release-please.yml
   pull_request:
     paths:
       - action.yml
@@ -23,6 +24,7 @@ on:
       - src/report.mjs
       - src/html-report.mjs
       - .github/workflows/browser-smoke.yml
+      - .github/workflows/release-please.yml
   workflow_dispatch:
 
 permissions:
@@ -33,9 +35,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Run ProdDoctor with Chromium evidence
+        id: doctor
         uses: ./
         with:
           url: https://example.com
@@ -52,12 +55,37 @@ jobs:
 
       - name: Verify evidence bundle
         shell: bash
+        env:
+          EVIDENCE_DIR: ${{ steps.doctor.outputs.evidence_dir }}
         run: |
-          test -s proddoctor-evidence/browser.png
-          test -s proddoctor-evidence/trace.zip
-          test -s proddoctor-evidence/report.json
-          test -s proddoctor-evidence/report.html
+          cd "$EVIDENCE_DIR"
+          test -s browser.png
+          test -s trace.zip
+          test -s report.json
+          test -s report.html
 
-          grep -q 'ProdDoctor Production Report' proddoctor-evidence/report.html
-          grep -q '"profile": "mobile"' proddoctor-evidence/report.json
-          grep -q '"version": "1.4.0"' proddoctor-evidence/report.json
+          grep -q 'ProdDoctor Production Report' report.html
+          grep -q '"profile": "mobile"' report.json
+          grep -q '"version": "1.4.0"' report.json
+
+      - name: A second browser invocation cannot overwrite the first evidence
+        id: second
+        uses: ./
+        with:
+          url: https://example.com
+          browser: true
+          browser_expect: Example Domain
+          browser_trace: always
+
+      - name: Verify evidence isolation
+        shell: bash
+        env:
+          FIRST_DIR: ${{ steps.doctor.outputs.evidence_dir }}
+          SECOND_DIR: ${{ steps.second.outputs.evidence_dir }}
+          FIRST_NAME: ${{ steps.doctor.outputs.evidence_name }}
+          SECOND_NAME: ${{ steps.second.outputs.evidence_name }}
+        run: |
+          test "$FIRST_DIR" != "$SECOND_DIR"
+          test "$FIRST_NAME" != "$SECOND_NAME"
+          test -s "$FIRST_DIR/trace.zip"
+          test -s "$SECOND_DIR/trace.zip"
