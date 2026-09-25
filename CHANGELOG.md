@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0
+## 1.4.0
 
 - Add desktop and mobile browser profiles.
 - Add Playwright Trace recording with `off`, `on-failure`, and `always` modes.

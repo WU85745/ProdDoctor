@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Minimal usage with v0.2 defaults
+      - name: Minimal usage with current defaults
         uses: ./
         with:
           url: https://example.com
