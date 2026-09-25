@@ -37,23 +37,23 @@
   <circle cx="101" cy="271" r="6" fill="#ffbd2e"/>
   <circle cx="122" cy="271" r="6" fill="#48cc6f"/>
 
-  <g opacity="0">
+  <g opacity="1">
     <text x="78" y="320" class="mono info" font-size="19">$ proddoctor https://prod.example.com --status 200</text>
     <animate attributeName="opacity" values="0;1;1" keyTimes="0;0.12;1" dur="6s" repeatCount="indefinite"/>
   </g>
-  <g opacity="0">
+  <g opacity="1">
     <text x="78" y="354" class="mono ok" font-size="19">✓ DNS resolved</text>
     <animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.20;0.28;1" dur="6s" repeatCount="indefinite"/>
   </g>
-  <g opacity="0">
+  <g opacity="1">
     <text x="78" y="388" class="mono bad" font-size="19">✗ HTTP 403 on the real production domain</text>
     <animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.38;0.46;1" dur="6s" repeatCount="indefinite"/>
   </g>
-  <g opacity="0">
+  <g opacity="1">
     <text x="78" y="422" class="mono bad" font-size="19">✗ Cloudflare Challenge / WAF suspected</text>
     <animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.54;0.62;1" dur="6s" repeatCount="indefinite"/>
   </g>
-  <g opacity="0">
+  <g opacity="1">
     <text x="78" y="456" class="mono warn" font-size="19">→ report.json + report.html saved</text>
     <animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.72;0.80;1" dur="6s" repeatCount="indefinite"/>
   </g>
