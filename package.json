@@ -1,0 +1,26 @@
+{
+  "name": "proddoctor",
+  "version": "0.1.0",
+  "description": "真正检查生产环境，而不只相信 CI 绿灯。",
+  "type": "module",
+  "bin": {
+    "proddoctor": "./bin/proddoctor.mjs"
+  },
+  "scripts": {
+    "start": "node ./bin/proddoctor.mjs",
+    "test": "node --test",
+    "check": "node --check ./src/checker.mjs && node --check ./src/report.mjs && node --check ./bin/proddoctor.mjs && npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "production",
+    "health-check",
+    "github-actions",
+    "cloudflare",
+    "deployment",
+    "smoke-test"
+  ],
+  "license": "MIT"
+}
