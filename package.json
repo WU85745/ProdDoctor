@@ -1,7 +1,7 @@
 {
   "name": "proddoctor",
-  "version": "0.3.0",
-  "description": "Post-deploy checks for real production domains with optional Playwright browser validation.",
+  "version": "0.4.0",
+  "description": "Post-deploy checks for real production domains with optional browser evidence, traces and HTML reports.",
   "type": "module",
   "bin": {
     "proddoctor": "./bin/proddoctor.mjs"
@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node ./bin/proddoctor.mjs",
     "test": "node --test",
-    "check": "node --check ./src/checker.mjs && node --check ./src/assets.mjs && node --check ./src/tls.mjs && node --check ./src/browser.mjs && node --check ./src/report.mjs && node --check ./bin/proddoctor.mjs && npm test"
+    "check": "node --check ./src/checker.mjs && node --check ./src/assets.mjs && node --check ./src/tls.mjs && node --check ./src/browser.mjs && node --check ./src/report.mjs && node --check ./src/html-report.mjs && node --check ./bin/proddoctor.mjs && npm test"
   },
   "engines": {
     "node": ">=20"
@@ -24,7 +24,9 @@
     "tls",
     "devops",
     "playwright",
-    "browser-testing"
+    "browser-testing",
+    "trace",
+    "incident-debugging"
   ],
   "license": "MIT"
 }
