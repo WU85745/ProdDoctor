@@ -59,7 +59,7 @@ export function toChineseReport(result) {
   }
 
   if (result.browser.checked) {
-    lines.push(`${icon(result.browser.ok)} 浏览器：${result.browser.mainStatus ?? '无响应'} · ${result.browser.title || '无标题'}`);
+    lines.push(`${icon(result.browser.ok)} 浏览器：${result.browser.mainStatus ?? '无响应'} · ${result.browser.title || '无标题'} · ${result.browser.profile || 'desktop'} ${result.browser.viewport?.width ?? '?'}×${result.browser.viewport?.height ?? '?'}`);
     lines.push(`   可见文本：${result.browser.textLength ?? 0} 字符`);
     if (result.browser.renderedExpect) {
       lines.push(`   渲染文本：${result.browser.renderedExpectOk ? '✅ 已找到' : '❌ 未找到'} “${result.browser.renderedExpect}”`);
@@ -78,6 +78,9 @@ export function toChineseReport(result) {
     }
     if (result.browser.screenshotPath) {
       lines.push(`   截图：${result.browser.screenshotPath}`);
+    }
+    if (result.browser.tracePath) {
+      lines.push(`   Trace：${result.browser.tracePath}`);
     }
   } else {
     lines.push('➖ 浏览器：未启用');
@@ -121,7 +124,7 @@ export function toMarkdownSummary(result) {
     : result.assets.reason || '未启用';
 
   const browserDetail = result.browser.checked
-    ? `HTTP ${result.browser.mainStatus ?? '无响应'} · pageerror ${result.browser.pageErrors.length} · console error ${result.browser.consoleErrors.length}`
+    ? `${result.browser.profile || 'desktop'} ${result.browser.viewport?.width ?? '?'}×${result.browser.viewport?.height ?? '?'} · HTTP ${result.browser.mainStatus ?? '无响应'} · pageerror ${result.browser.pageErrors.length} · console error ${result.browser.consoleErrors.length}`
     : '未启用';
 
   const rows = [
@@ -173,6 +176,7 @@ export function toMarkdownSummary(result) {
     ...failedAssets,
     ...browserDetails,
     ...(result.browser.screenshotPath ? [`浏览器截图：\`${result.browser.screenshotPath}\``, ''] : []),
+    ...(result.browser.tracePath ? [`Playwright Trace：\`${result.browser.tracePath}\``, ''] : []),
     ...(result.failures.length ? ['### 阻断问题', ...result.failures.map(x => `- ${x}`), ''] : []),
     ...(result.warnings.length ? ['### 提示', ...result.warnings.map(x => `- ${x}`), ''] : [])
   ].join('\n');
