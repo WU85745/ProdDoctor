@@ -1,5 +1,5 @@
 name: 'ProdDoctor'
-description: '在部署后检查真实生产域名的可访问性和页面内容。'
+description: '在部署后检查真实生产域名、页面内容、TLS 和同源 JS/CSS 资源。'
 author: 'Lucas Lu'
 branding:
   icon: 'activity'
@@ -12,6 +12,10 @@ inputs:
     description: '页面必须包含的关键文本，可留空'
     required: false
     default: ''
+  status:
+    description: '最终 HTTP 状态必须精确匹配的状态码，可留空'
+    required: false
+    default: ''
   retries:
     description: '失败后的重试次数'
     required: false
@@ -20,6 +24,18 @@ inputs:
     description: '单次请求超时（毫秒）'
     required: false
     default: '15000'
+  check_assets:
+    description: '是否检查同源 JS/CSS 静态资源'
+    required: false
+    default: 'true'
+  max_assets:
+    description: '最多检查的同源 JS/CSS 数量'
+    required: false
+    default: '20'
+  tls_warn_days:
+    description: 'TLS 证书剩余多少天时给出到期提示'
+    required: false
+    default: '14'
 runs:
   using: 'composite'
   steps:
@@ -32,15 +48,36 @@ runs:
       env:
         PROD_DOCTOR_URL: ${{ inputs.url }}
         PROD_DOCTOR_EXPECT: ${{ inputs.expect }}
+        PROD_DOCTOR_STATUS: ${{ inputs.status }}
         PROD_DOCTOR_RETRIES: ${{ inputs.retries }}
         PROD_DOCTOR_TIMEOUT: ${{ inputs.timeout }}
+        PROD_DOCTOR_CHECK_ASSETS: ${{ inputs.check_assets }}
+        PROD_DOCTOR_MAX_ASSETS: ${{ inputs.max_assets }}
+        PROD_DOCTOR_TLS_WARN_DAYS: ${{ inputs.tls_warn_days }}
       run: |
         args=(
           "$PROD_DOCTOR_URL"
           --retries "$PROD_DOCTOR_RETRIES"
           --timeout "$PROD_DOCTOR_TIMEOUT"
+          --max-assets "$PROD_DOCTOR_MAX_ASSETS"
+          --tls-warn-days "$PROD_DOCTOR_TLS_WARN_DAYS"
         )
+
         if [ -n "$PROD_DOCTOR_EXPECT" ]; then
           args+=(--expect "$PROD_DOCTOR_EXPECT")
         fi
+
+        if [ -n "$PROD_DOCTOR_STATUS" ]; then
+          args+=(--status "$PROD_DOCTOR_STATUS")
+        fi
+
+        case "$PROD_DOCTOR_CHECK_ASSETS" in
+          true|TRUE|1|yes|YES) ;;
+          false|FALSE|0|no|NO) args+=(--no-assets) ;;
+          *)
+            echo "check_assets 只接受 true/false、1/0 或 yes/no"
+            exit 2
+            ;;
+        esac
+
         node "$GITHUB_ACTION_PATH/bin/proddoctor.mjs" "${args[@]}"
