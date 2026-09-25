@@ -1,3 +1,6 @@
+# 用户示例：默认锁定具体版本 v1.4.0。
+# 生产流水线建议把 v1.4.0 替换为该 tag 对应的完整 commit SHA。
+
 name: Verify real production
 
 on:
@@ -10,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: WU85745/ProdDoctor@main
+      - uses: WU85745/ProdDoctor@v1.4.0
         with:
           url: https://example.com
           expect: Example Domain
