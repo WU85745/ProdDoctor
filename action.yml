@@ -1,5 +1,5 @@
 name: 'ProdDoctor'
-description: '部署后检查真实生产域名，而不是只相信 CI 绿灯。'
+description: '在部署后检查真实生产域名的可访问性和页面内容。'
 author: 'Lucas Lu'
 branding:
   icon: 'activity'
@@ -35,8 +35,12 @@ runs:
         PROD_DOCTOR_RETRIES: ${{ inputs.retries }}
         PROD_DOCTOR_TIMEOUT: ${{ inputs.timeout }}
       run: |
-        node "$GITHUB_ACTION_PATH/bin/proddoctor.mjs" \
-          "$PROD_DOCTOR_URL" \
-          --expect "$PROD_DOCTOR_EXPECT" \
-          --retries "$PROD_DOCTOR_RETRIES" \
+        args=(
+          "$PROD_DOCTOR_URL"
+          --retries "$PROD_DOCTOR_RETRIES"
           --timeout "$PROD_DOCTOR_TIMEOUT"
+        )
+        if [ -n "$PROD_DOCTOR_EXPECT" ]; then
+          args+=(--expect "$PROD_DOCTOR_EXPECT")
+        fi
+        node "$GITHUB_ACTION_PATH/bin/proddoctor.mjs" "${args[@]}"
