@@ -1,5 +1,5 @@
 name: 'ProdDoctor'
-description: '部署后检查真实生产域名、页面内容、TLS、同源资源，并可选执行真实浏览器验收。'
+description: '部署后检查真实生产域名、TLS、同源资源，并可选执行带截图/Trace/报告的 Chromium 验收。'
 author: 'Lucas Lu'
 branding:
   icon: 'activity'
@@ -58,8 +58,20 @@ inputs:
     description: '是否把 Console error 作为阻断问题'
     required: false
     default: 'false'
+  browser_profile:
+    description: '浏览器视口预设：desktop 或 mobile'
+    required: false
+    default: 'desktop'
+  browser_trace:
+    description: 'Playwright Trace：off、on-failure 或 always'
+    required: false
+    default: 'on-failure'
   upload_screenshot:
-    description: '浏览器检查时是否上传整页截图 Artifact'
+    description: '浏览器检查时是否保存整页截图'
+    required: false
+    default: 'true'
+  upload_report:
+    description: '浏览器检查时是否生成 JSON + HTML Production Report'
     required: false
     default: 'true'
 
@@ -78,9 +90,12 @@ runs:
         PROD_DOCTOR_BROWSER: ${{ inputs.browser }}
         PROD_DOCTOR_BROWSER_FAIL_CONSOLE: ${{ inputs.browser_fail_console }}
         PROD_DOCTOR_UPLOAD_SCREENSHOT: ${{ inputs.upload_screenshot }}
+        PROD_DOCTOR_UPLOAD_REPORT: ${{ inputs.upload_report }}
         PROD_DOCTOR_BROWSER_EXPECT: ${{ inputs.browser_expect }}
+        PROD_DOCTOR_BROWSER_PROFILE: ${{ inputs.browser_profile }}
+        PROD_DOCTOR_BROWSER_TRACE: ${{ inputs.browser_trace }}
       run: |
-        for value in           "$PROD_DOCTOR_CHECK_ASSETS"           "$PROD_DOCTOR_BROWSER"           "$PROD_DOCTOR_BROWSER_FAIL_CONSOLE"           "$PROD_DOCTOR_UPLOAD_SCREENSHOT"; do
+        for value in           "$PROD_DOCTOR_CHECK_ASSETS"           "$PROD_DOCTOR_BROWSER"           "$PROD_DOCTOR_BROWSER_FAIL_CONSOLE"           "$PROD_DOCTOR_UPLOAD_SCREENSHOT"           "$PROD_DOCTOR_UPLOAD_REPORT"; do
           case "$value" in
             true|false) ;;
             *)
@@ -89,6 +104,22 @@ runs:
               ;;
           esac
         done
+
+        case "$PROD_DOCTOR_BROWSER_PROFILE" in
+          desktop|mobile) ;;
+          *)
+            echo "browser_profile 只接受 desktop 或 mobile"
+            exit 2
+            ;;
+        esac
+
+        case "$PROD_DOCTOR_BROWSER_TRACE" in
+          off|on-failure|always) ;;
+          *)
+            echo "browser_trace 只接受 off、on-failure 或 always"
+            exit 2
+            ;;
+        esac
 
         if [ "$PROD_DOCTOR_BROWSER" != "true" ] && [ -n "$PROD_DOCTOR_BROWSER_EXPECT" ]; then
           echo "browser_expect 需要 browser: true"
@@ -128,7 +159,10 @@ runs:
         PROD_DOCTOR_BROWSER_TIMEOUT: ${{ inputs.browser_timeout }}
         PROD_DOCTOR_BROWSER_SETTLE: ${{ inputs.browser_settle }}
         PROD_DOCTOR_BROWSER_FAIL_CONSOLE: ${{ inputs.browser_fail_console }}
+        PROD_DOCTOR_BROWSER_PROFILE: ${{ inputs.browser_profile }}
+        PROD_DOCTOR_BROWSER_TRACE: ${{ inputs.browser_trace }}
         PROD_DOCTOR_UPLOAD_SCREENSHOT: ${{ inputs.upload_screenshot }}
+        PROD_DOCTOR_UPLOAD_REPORT: ${{ inputs.upload_report }}
       run: |
         args=(
           "$PROD_DOCTOR_URL"
@@ -151,10 +185,15 @@ runs:
         fi
 
         if [ "$PROD_DOCTOR_BROWSER" = "true" ]; then
+          EVIDENCE_DIR="$GITHUB_WORKSPACE/proddoctor-evidence"
+          mkdir -p "$EVIDENCE_DIR"
+
           args+=(
             --browser
             --browser-timeout "$PROD_DOCTOR_BROWSER_TIMEOUT"
             --browser-settle "$PROD_DOCTOR_BROWSER_SETTLE"
+            --browser-profile "$PROD_DOCTOR_BROWSER_PROFILE"
+            --browser-trace "$PROD_DOCTOR_BROWSER_TRACE"
           )
 
           if [ -n "$PROD_DOCTOR_BROWSER_EXPECT" ]; then
@@ -166,17 +205,28 @@ runs:
           fi
 
           if [ "$PROD_DOCTOR_UPLOAD_SCREENSHOT" = "true" ]; then
-            args+=(--browser-screenshot "$GITHUB_WORKSPACE/proddoctor-browser.png")
+            args+=(--browser-screenshot "$EVIDENCE_DIR/browser.png")
+          fi
+
+          if [ "$PROD_DOCTOR_BROWSER_TRACE" != "off" ]; then
+            args+=(--browser-trace-path "$EVIDENCE_DIR/trace.zip")
+          fi
+
+          if [ "$PROD_DOCTOR_UPLOAD_REPORT" = "true" ]; then
+            args+=(
+              --json-file "$EVIDENCE_DIR/report.json"
+              --html-report "$EVIDENCE_DIR/report.html"
+            )
           fi
         fi
 
         node "$GITHUB_ACTION_PATH/bin/proddoctor.mjs" "${args[@]}"
 
-    - name: Upload browser screenshot
-      if: ${{ always() && inputs.browser == 'true' && inputs.upload_screenshot == 'true' }}
+    - name: Upload ProdDoctor evidence
+      if: ${{ always() && inputs.browser == 'true' && (inputs.upload_screenshot == 'true' || inputs.upload_report == 'true' || inputs.browser_trace != 'off') }}
       uses: actions/upload-artifact@v4
       with:
-        name: proddoctor-browser-${{ github.job }}
-        path: ${{ github.workspace }}/proddoctor-browser.png
+        name: proddoctor-evidence-${{ github.job }}
+        path: ${{ github.workspace }}/proddoctor-evidence/*
         if-no-files-found: warn
         retention-days: 7
