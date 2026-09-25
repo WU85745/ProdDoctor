@@ -37,7 +37,7 @@ function replaceRequired(text, pattern, replacement, label) {
 
 let changed = false;
 
-changed = updateFile('README.md', (input) => {
+changed = updateFile('README.zh-CN.md', (input) => {
   let text = input;
 
   text = replaceRequired(
@@ -97,7 +97,7 @@ changed = updateFile('README.md', (input) => {
   return text;
 }) || changed;
 
-changed = updateFile('README.en.md', (input) => {
+changed = updateFile('README.md', (input) => {
   let text = input;
 
   text = replaceRequired(
