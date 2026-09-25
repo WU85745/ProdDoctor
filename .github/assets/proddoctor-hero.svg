@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520">
+  <rect width="1200" height="520" fill="#090c12"/>
+  <g stroke="#0f141d" stroke-width="1">
+    <line x1="0" y1="0" x2="0" y2="520"/><line x1="40" y1="0" x2="40" y2="520"/><line x1="80" y1="0" x2="80" y2="520"/><line x1="120" y1="0" x2="120" y2="520"/><line x1="160" y1="0" x2="160" y2="520"/><line x1="200" y1="0" x2="200" y2="520"/><line x1="240" y1="0" x2="240" y2="520"/><line x1="280" y1="0" x2="280" y2="520"/><line x1="320" y1="0" x2="320" y2="520"/><line x1="360" y1="0" x2="360" y2="520"/><line x1="400" y1="0" x2="400" y2="520"/><line x1="440" y1="0" x2="440" y2="520"/><line x1="480" y1="0" x2="480" y2="520"/><line x1="520" y1="0" x2="520" y2="520"/><line x1="560" y1="0" x2="560" y2="520"/><line x1="600" y1="0" x2="600" y2="520"/><line x1="640" y1="0" x2="640" y2="520"/><line x1="680" y1="0" x2="680" y2="520"/><line x1="720" y1="0" x2="720" y2="520"/><line x1="760" y1="0" x2="760" y2="520"/><line x1="800" y1="0" x2="800" y2="520"/><line x1="840" y1="0" x2="840" y2="520"/><line x1="880" y1="0" x2="880" y2="520"/><line x1="920" y1="0" x2="920" y2="520"/><line x1="960" y1="0" x2="960" y2="520"/><line x1="1000" y1="0" x2="1000" y2="520"/><line x1="1040" y1="0" x2="1040" y2="520"/><line x1="1080" y1="0" x2="1080" y2="520"/><line x1="1120" y1="0" x2="1120" y2="520"/><line x1="1160" y1="0" x2="1160" y2="520"/><line x1="1200" y1="0" x2="1200" y2="520"/>
+    <line x1="0" y1="0" x2="1200" y2="0"/><line x1="0" y1="40" x2="1200" y2="40"/><line x1="0" y1="80" x2="1200" y2="80"/><line x1="0" y1="120" x2="1200" y2="120"/><line x1="0" y1="160" x2="1200" y2="160"/><line x1="0" y1="200" x2="1200" y2="200"/><line x1="0" y1="240" x2="1200" y2="240"/><line x1="0" y1="280" x2="1200" y2="280"/><line x1="0" y1="320" x2="1200" y2="320"/><line x1="0" y1="360" x2="1200" y2="360"/><line x1="0" y1="400" x2="1200" y2="400"/><line x1="0" y1="440" x2="1200" y2="440"/><line x1="0" y1="480" x2="1200" y2="480"/><line x1="0" y1="520" x2="1200" y2="520"/>
+  </g>
+  <style>
+    .sans{font-family:Inter,Segoe UI,Arial,sans-serif}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  </style>
+  <text x="60" y="96" class="sans" font-size="70" font-weight="800" fill="#f5f7fa">ProdDoctor</text>
+  <text x="60" y="142" class="sans" font-size="32" font-weight="700" fill="#f5f7fa">Your deploy is green. Is production actually healthy?</text>
+  <text x="60" y="182" class="sans" font-size="24" fill="#9ba7b9">DNS • HTTP • TLS • assets • Cloudflare/WAF • real Chromium</text>
+  <rect x="60" y="230" width="1080" height="240" rx="20" fill="#0b111a" stroke="#2d3b4e" stroke-width="2"/>
+  <circle cx="92" cy="260" r="7" fill="#ff5f56"/>
+  <circle cx="116" cy="260" r="7" fill="#ffbd2e"/>
+  <circle cx="140" cy="260" r="7" fill="#48cc6f"/>
+  <text x="92" y="310" class="mono" font-size="20" fill="#67a6ff">$ proddoctor https://example.com --browser</text>
+  <text x="92" y="346" class="mono" font-size="20" fill="#4ade80">✓ DNS resolved</text>
+  <text x="92" y="382" class="mono" font-size="20" fill="#4ade80">✓ HTTP 200 / TLS valid / assets healthy</text>
+  <text x="92" y="418" class="mono" font-size="20" fill="#ff6868">✗ Browser runtime: uncaught JavaScript error</text>
+  <text x="92" y="454" class="mono" font-size="20" fill="#ffc754">→ evidence: screenshot + trace + HTML/JSON report</text>
+</svg>
