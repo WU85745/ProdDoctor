@@ -11,10 +11,13 @@ export function toChineseReport(result) {
   lines.push(`${icon(result.page.ok)} 页面：${result.page.status ?? '无响应'}，${result.page.elapsedMs}ms，尝试 ${result.page.attempts} 次`);
   if (result.page.finalUrl) lines.push(`   最终地址：${result.page.finalUrl}`);
   if (result.page.expected) lines.push(`${icon(result.page.expectedOk)} 关键字：${result.page.expectedOk ? '已找到' : '未找到'} “${result.page.expected}”`);
-  if (result.page.blockedByChallenge) lines.push(`❌ Cloudflare：疑似挑战页/WAF 阻断 (${result.page.challengeMatches.join(', ')})`);
-  else if (result.page.cfRay) lines.push(`✅ Cloudflare：请求已到达边缘节点，CF-Ray ${result.page.cfRay}`);
-  lines.push(`${icon(result.auxiliary.robots.ok)} robots.txt：HTTP ${result.auxiliary.robots.status ?? '无响应'}`);
-  lines.push(`${icon(result.auxiliary.sitemap.ok)} sitemap.xml：HTTP ${result.auxiliary.sitemap.status ?? '无响应'}`);
+  if (result.page.blockedByChallenge) {
+    lines.push(`❌ Cloudflare：疑似挑战页/WAF 阻断 (${result.page.challengeMatches.join(', ')})`);
+  } else if (result.page.cfRay) {
+    lines.push(`✅ Cloudflare：请求已到达边缘节点，CF-Ray ${result.page.cfRay}`);
+  }
+  lines.push(`${result.auxiliary.robots.ok ? '✅' : '⚠️'} robots.txt：HTTP ${result.auxiliary.robots.status ?? '无响应'}`);
+  lines.push(`${result.auxiliary.sitemap.ok ? '✅' : '⚠️'} sitemap.xml：HTTP ${result.auxiliary.sitemap.status ?? '无响应'}`);
   lines.push(`🛡️ 安全响应头：${result.page.security.score}/100`);
   if (result.page.security.present.length) lines.push(`   已有：${result.page.security.present.join('、')}`);
   if (result.page.security.missing.length) lines.push(`   缺少：${result.page.security.missing.join('、')}`);
@@ -29,8 +32,12 @@ export function toChineseReport(result) {
     lines.push('提示：');
     for (const item of result.warnings) lines.push(`- ${item}`);
   }
+
   lines.push('');
-  lines.push(result.ok ? '生产环境真的活着。CI 这次没有骗你。' : 'CI 可能是绿的，但生产环境还需要治疗。');
+  lines.push(result.ok
+    ? '检查完成：生产页面通过主要可用性检查。'
+    : '检查未通过，请根据上方阻断问题继续排查。'
+  );
   return lines.join('\n');
 }
 
