@@ -1,0 +1,32 @@
+name: Browser production check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  browser-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: WU85745/ProdDoctor@main
+        with:
+          url: https://example.com
+          status: 200
+
+          # 启用真实 Chromium 检查
+          browser: true
+
+          # 检查 JavaScript 执行后真正显示在页面上的文字
+          browser_expect: Example Domain
+
+          # 浏览器导航最长等待 30 秒
+          browser_timeout: 30000
+
+          # DOMContentLoaded 后再等待 750ms，让前端完成首轮渲染
+          browser_settle: 750
+
+          # 默认 false：记录 Console error，但不因此阻断
+          browser_fail_console: false
+
+          # 默认 true：上传整页截图 Artifact
+          upload_screenshot: true
