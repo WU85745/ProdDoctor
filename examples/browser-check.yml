@@ -19,6 +19,9 @@ jobs:
           # 检查 JavaScript 执行后真正显示在页面上的文字
           browser_expect: Example Domain
 
+          # desktop 或 mobile
+          browser_profile: mobile
+
           # 浏览器导航最长等待 30 秒
           browser_timeout: 30000
 
@@ -28,5 +31,9 @@ jobs:
           # 默认 false：记录 Console error，但不因此阻断
           browser_fail_console: false
 
-          # 默认 true：上传整页截图 Artifact
+          # 失败时自动保留 Playwright Trace
+          browser_trace: on-failure
+
+          # 保存截图和 HTML/JSON Production Report
           upload_screenshot: true
+          upload_report: true
