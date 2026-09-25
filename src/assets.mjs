@@ -4,6 +4,7 @@ function getAttribute(tag, name) {
 }
 
 export function extractStaticAssets(html, pageUrl, maxAssets = 20) {
+  if (maxAssets <= 0) return [];
   const base = new URL(pageUrl);
   const found = [];
 
