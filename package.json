@@ -9,7 +9,10 @@
   "scripts": {
     "start": "node ./bin/proddoctor.mjs",
     "test": "node --test",
-    "check": "node --check ./src/checker.mjs && node --check ./src/assets.mjs && node --check ./src/tls.mjs && node --check ./src/browser.mjs && node --check ./src/report.mjs && node --check ./src/html-report.mjs && node --check ./bin/proddoctor.mjs && npm test"
+    "check": "node --check ./src/checker.mjs && node --check ./src/assets.mjs && node --check ./src/tls.mjs && node --check ./src/browser.mjs && node --check ./src/report.mjs && node --check ./src/html-report.mjs && node --check ./bin/proddoctor.mjs && node --check ./scripts/sync-version.mjs && node --check ./scripts/check-release-policy.mjs && node --check ./scripts/check-pr-title.mjs && npm run version:check && npm test",
+    "version:check": "node ./scripts/sync-version.mjs --check",
+    "release:sync": "node ./scripts/sync-version.mjs --write",
+    "release:policy": "node ./scripts/check-release-policy.mjs"
   },
   "engines": {
     "node": ">=20"
