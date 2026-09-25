@@ -2,6 +2,7 @@ import dns from 'node:dns/promises';
 import { performance } from 'node:perf_hooks';
 import { checkStaticAssets } from './assets.mjs';
 import { inspectTls } from './tls.mjs';
+import { runBrowserCheck, skippedBrowser } from './browser.mjs';
 
 export const challengeMarkers = [
   'just a moment',
@@ -65,7 +66,7 @@ async function fetchOnce(url, {
       method,
       redirect: 'follow',
       headers: {
-        'user-agent': 'ProdDoctor/0.2 (+https://github.com/WU85745/ProdDoctor)',
+        'user-agent': 'ProdDoctor/0.3 (+https://github.com/WU85745/ProdDoctor)',
         accept: 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
         'cache-control': 'no-cache'
       },
@@ -175,6 +176,12 @@ export async function runChecks(rawUrl, options = {}) {
   const checkAssets = options.checkAssets ?? true;
   const maxAssets = options.maxAssets ?? 20;
   const tlsWarnDays = options.tlsWarnDays ?? 14;
+  const browserEnabled = options.browserEnabled ?? false;
+  const browserTimeoutMs = options.browserTimeoutMs ?? 30000;
+  const browserRenderedExpect = options.browserRenderedExpect ?? '';
+  const browserFailConsoleErrors = options.browserFailConsoleErrors ?? false;
+  const browserScreenshotPath = options.browserScreenshotPath ?? null;
+  const browserSettleMs = options.browserSettleMs ?? 750;
 
   let dnsResult;
   const dnsStarted = performance.now();
@@ -228,6 +235,17 @@ export async function runChecks(rawUrl, options = {}) {
     }
   }
 
+  let browser = skippedBrowser();
+  if (browserEnabled) {
+    browser = await runBrowserCheck(finalUrl, {
+      timeoutMs: browserTimeoutMs,
+      renderedExpect: browserRenderedExpect,
+      failConsoleErrors: browserFailConsoleErrors,
+      screenshotPath: browserScreenshotPath,
+      settleMs: browserSettleMs
+    });
+  }
+
   const warnings = [];
 
   if (target.protocol !== 'https:') {
@@ -247,8 +265,14 @@ export async function runChecks(rawUrl, options = {}) {
 
   if (tls.warning) warnings.push(tls.warning);
 
-  if (assets.checked && assets.count === maxAssets) {
+  if (assets.checked && maxAssets > 0 && assets.count === maxAssets) {
     warnings.push(`静态资源检查达到上限 ${maxAssets} 个，页面可能还有更多资源未检查。`);
+  }
+
+  if (browser.checked) {
+    for (const warning of browser.warnings) {
+      warnings.push(`浏览器：${warning}`);
+    }
   }
 
   const failures = [];
@@ -281,9 +305,16 @@ export async function runChecks(rawUrl, options = {}) {
     failures.push(`发现 ${assets.failedCount} 个不可用或返回异常内容的同源 JS/CSS 资源`);
   }
 
+  if (browser.checked && !browser.ok) {
+    if (browser.error) failures.push(`浏览器检查失败：${browser.error}`);
+    for (const failure of browser.failures) {
+      failures.push(`浏览器：${failure}`);
+    }
+  }
+
   return {
     tool: 'ProdDoctor',
-    version: '0.2.0',
+    version: '0.3.0',
     checkedAt: new Date().toISOString(),
     target: target.href,
     hostname: target.hostname,
@@ -310,6 +341,7 @@ export async function runChecks(rawUrl, options = {}) {
     },
     tls,
     assets,
+    browser,
     auxiliary: { robots, sitemap },
     warnings,
     failures,

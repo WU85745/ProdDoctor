@@ -153,6 +153,8 @@ test('可以检查本地页面、同源 JS/CSS 和辅助文件', async (t) => {
   assert.equal(result.assets.checked, true);
   assert.equal(result.assets.count, 2);
   assert.equal(result.assets.failedCount, 0);
+  assert.equal(result.browser.checked, false);
+  assert.equal(result.browser.ok, true);
 });
 
 test('同源 JS 404 会让生产检查失败', async (t) => {

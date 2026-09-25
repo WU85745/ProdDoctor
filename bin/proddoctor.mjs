@@ -4,28 +4,38 @@ import { runChecks } from '../src/checker.mjs';
 import { toChineseReport, toMarkdownSummary } from '../src/report.mjs';
 
 function usage() {
-  console.log(`ProdDoctor v0.2.0
+  console.log(`ProdDoctor v0.3.0
 
 用法：
   proddoctor <URL> [选项]
 
-选项：
-  --expect <文本>          要求页面包含指定文本
+基础检查：
+  --expect <文本>          要求原始 HTML 包含指定文本
   --status <状态码>        要求最终 HTTP 状态精确匹配，例如 200
-  --timeout <毫秒>        单次请求超时，默认 15000
+  --timeout <毫秒>        单次 HTTP 请求超时，默认 15000
   --retries <次数>        失败后的重试次数，默认 1
   --no-assets             不检查同源 JS/CSS 静态资源
   --max-assets <数量>     最多检查的静态资源数量，默认 20
   --tls-warn-days <天>    TLS 证书进入该剩余天数时给出提示，默认 14
+
+浏览器检查：
+  --browser               使用 Playwright + Chromium 执行真实浏览器检查
+  --browser-expect <文本> 要求浏览器渲染后的可见文本包含指定内容
+  --browser-timeout <毫秒> 浏览器导航超时，默认 30000
+  --browser-settle <毫秒> DOMContentLoaded 后额外等待时间，默认 750
+  --browser-fail-console  Console error 也作为阻断问题
+  --browser-screenshot <路径> 保存整页截图
+
+输出：
   --json                  输出 JSON
   --json-file <路径>      额外保存 JSON 报告
   --help                  显示帮助
 
 示例：
   proddoctor https://example.com
-  proddoctor https://example.com --expect "Example Domain"
-  proddoctor https://example.com --status 200 --retries 2
-  proddoctor https://example.com --no-assets
+  proddoctor https://example.com --expect "Example Domain" --status 200
+  proddoctor https://example.com --browser --browser-expect "Example Domain"
+  proddoctor https://example.com --browser --browser-screenshot ./production.png
 `);
 }
 
@@ -66,6 +76,13 @@ try {
   const expected = value('--expect', '', { allowEmpty: true });
   const checkAssets = !args.includes('--no-assets');
 
+  const browserEnabled = args.includes('--browser');
+  const browserRenderedExpect = value('--browser-expect', '', { allowEmpty: true });
+  const browserTimeoutMs = Number(value('--browser-timeout', '30000'));
+  const browserSettleMs = Number(value('--browser-settle', '750'));
+  const browserFailConsoleErrors = args.includes('--browser-fail-console');
+  const browserScreenshotPath = value('--browser-screenshot', null);
+
   if (!Number.isFinite(timeoutMs) || timeoutMs < 100) {
     throw new Error('--timeout 必须是 >= 100 的数字');
   }
@@ -81,6 +98,19 @@ try {
   if (expectedStatus !== null && (!Number.isInteger(expectedStatus) || expectedStatus < 100 || expectedStatus > 599)) {
     throw new Error('--status 必须是 100 到 599 的整数');
   }
+  if (!Number.isInteger(browserTimeoutMs) || browserTimeoutMs < 1000 || browserTimeoutMs > 300000) {
+    throw new Error('--browser-timeout 必须是 1000 到 300000 的整数');
+  }
+  if (!Number.isInteger(browserSettleMs) || browserSettleMs < 0 || browserSettleMs > 60000) {
+    throw new Error('--browser-settle 必须是 0 到 60000 的整数');
+  }
+  if (!browserEnabled && (
+    browserRenderedExpect ||
+    browserFailConsoleErrors ||
+    browserScreenshotPath
+  )) {
+    throw new Error('浏览器专用参数需要同时启用 --browser');
+  }
 
   const result = await runChecks(parsedUrl.href, {
     expected,
@@ -89,7 +119,13 @@ try {
     retries,
     checkAssets,
     maxAssets,
-    tlsWarnDays
+    tlsWarnDays,
+    browserEnabled,
+    browserRenderedExpect,
+    browserTimeoutMs,
+    browserSettleMs,
+    browserFailConsoleErrors,
+    browserScreenshotPath
   });
 
   const jsonFile = value('--json-file', process.env.PRODDOCTOR_JSON_FILE || null);

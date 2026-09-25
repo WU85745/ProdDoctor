@@ -1,0 +1,43 @@
+name: Browser smoke test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - action.yml
+      - bin/**
+      - src/browser.mjs
+      - src/checker.mjs
+      - src/report.mjs
+      - .github/workflows/browser-smoke.yml
+  pull_request:
+    paths:
+      - action.yml
+      - bin/**
+      - src/browser.mjs
+      - src/checker.mjs
+      - src/report.mjs
+      - .github/workflows/browser-smoke.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run ProdDoctor with Chromium
+        uses: ./
+        with:
+          url: https://example.com
+          status: 200
+          browser: true
+          browser_expect: Example Domain
+          browser_timeout: 30000
+          browser_settle: 250
+          browser_fail_console: false
+          upload_screenshot: true
