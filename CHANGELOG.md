@@ -1,16 +1,31 @@
 # Changelog
 
-## 1.4.0
+所有值得记录的变更都集中在这里。格式遵循 Keep a Changelog 的组织方式，版本号遵循 SemVer。
+
+## [Unreleased]
+
+## [1.4.0]
+
+> 当前建议用户引用的具体版本为 `v1.4.0`。只有在对应 Git tag 已发布后，`WU85745/ProdDoctor@v1.4.0` 才会成为可解析的 Action 引用。
+
+### Added
 
 - Add desktop and mobile browser profiles.
 - Add Playwright Trace recording with `off`, `on-failure`, and `always` modes.
 - Add standalone HTML Production Reports.
 - Bundle browser screenshot, JSON report, HTML report, and Trace into one evidence artifact.
-- Keep Trace retention failure-oriented by default to reduce artifact noise.
 - Add regression tests for HTML escaping and report evidence links.
 - Expand browser smoke tests to verify mobile mode and all generated evidence files.
 
-## 0.3.0
+### Changed
+
+- Keep Trace retention failure-oriented by default to reduce artifact noise.
+- User-facing documentation and examples now pin the concrete release tag `v1.4.0` instead of `main`.
+- Document version pinning, commit-SHA production guidance, and compatibility expectations.
+
+## [0.3.0]
+
+### Added
 
 - Add optional Playwright + Chromium browser validation.
 - Detect uncaught JavaScript page errors.
@@ -19,11 +34,16 @@
 - Add rendered-text assertions with `browser_expect`.
 - Record Console errors and optionally fail on them.
 - Capture full-page screenshots and upload them as GitHub Actions artifacts.
-- Keep browser mode opt-in so the default HTTP checks remain lightweight.
 - Install Playwright in an isolated runner temp directory instead of modifying the user's project dependencies.
 - Add a real Chromium smoke-test workflow.
 
-## 0.2.0
+### Changed
+
+- Keep browser mode opt-in so the default HTTP checks remain lightweight.
+
+## [0.2.0]
+
+### Added
 
 - Add TLS certificate-chain and expiry checks.
 - Check same-origin JavaScript and stylesheet assets after the main page loads.
@@ -33,7 +53,9 @@
 - Extend JSON and GitHub Actions summaries with TLS and asset results.
 - Expand regression and Action smoke tests.
 
-## 0.1.0
+## [0.1.0]
+
+### Added
 
 - Initial public release.
 - DNS, HTTP, redirects, expected-content checks and Cloudflare Challenge/WAF detection.
