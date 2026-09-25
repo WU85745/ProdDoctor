@@ -940,6 +940,8 @@ npm run check
 npm test
 ```
 
+维护者发布新版本前，请按 [docs/releasing.md](docs/releasing.md) 的检查清单执行。
+
 仓库包含真实 GitHub Action 烟雾测试，分别验证：
 
 - 默认轻量模式
