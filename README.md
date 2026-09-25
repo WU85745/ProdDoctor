@@ -6,24 +6,17 @@
 ![Version](https://img.shields.io/badge/version-v1.4-2563eb)
 ![License](https://img.shields.io/badge/license-MIT-16a34a)
 
+<p align="center">
+  <img src=".github/assets/proddoctor-hero.svg" alt="ProdDoctor - post-deploy production validation" width="100%">
+</p>
+
 **Post-deploy production validation for real websites.**
 
-DNS、HTTP、TLS、静态资源、Cloudflare/WAF，再到真实 Chromium 渲染，ProdDoctor 用来验证“部署完成之后，用户真正访问到的网站是否正常”。
+ProdDoctor 在部署完成后直接检查用户真正访问到的生产环境。它不会只停在“Build 成功”或“Deploy 命令成功”，而是继续验证 DNS、HTTP、TLS、真实页面内容、Cloudflare/WAF、同源资源，以及可选的 Chromium 运行时。
 
-**部署成功，不代表真实生产网站已经正常。**
+> **CI 是绿的，不代表生产网站真的正常。**
 
-ProdDoctor 是一个 post-deploy production smoke test。它会在部署完成后直接检查用户真正访问的生产域名，而不是只确认构建或部署命令是否成功。
-
-它特别适合发现这种情况：
-
-```text
-Build              ✅
-Deploy command     ✅
-Platform URL       ✅
-Real custom domain ❌
-```
-
-只需几行 GitHub Actions 配置：
+## 30 秒接入
 
 ```yaml
 - uses: WU85745/ProdDoctor@main
@@ -31,6 +24,16 @@ Real custom domain ❌
     url: https://example.com
     expect: My Website
 ```
+
+不需要 Cloudflare API Token，也不需要修改你的部署平台配置。
+
+### 一个典型故障
+
+<p align="center">
+  <img src=".github/assets/proddoctor-demo.svg" alt="ProdDoctor detects a real production-domain failure after CI passes" width="100%">
+</p>
+
+上面的场景里，构建、部署和平台地址都正常，但真实生产域名返回 Cloudflare 403。ProdDoctor 会让 Workflow 直接失败，并给出更具体的故障方向，而不是等用户先发现问题。
 
 ## 它会检查什么
 
