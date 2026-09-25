@@ -84,6 +84,14 @@ test('只提取同源 script 和 stylesheet', () => {
   ]);
 });
 
+test('静态资源 URL 中的 HTML entity 会正确还原', () => {
+  const assets = extractStaticAssets(
+    '<script src="/app.js?v=1&amp;lang=zh"></script>',
+    'https://example.com/',
+    20
+  );
+  assert.equal(assets[0].url, 'https://example.com/app.js?v=1&lang=zh');
+});
 test('maxAssets 为 0 时不检查静态资源', () => {
   const assets = extractStaticAssets(
     '<script src="/app.js"></script>',
