@@ -31,6 +31,46 @@ function compactMessage(value, max = 500) {
   return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
+function contextOptions(profile) {
+  if (profile === 'mobile') {
+    return {
+      ignoreHTTPSErrors: false,
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+      deviceScaleFactor: 3
+    };
+  }
+
+  return {
+    ignoreHTTPSErrors: false,
+    viewport: { width: 1440, height: 900 },
+    isMobile: false,
+    hasTouch: false,
+    deviceScaleFactor: 1
+  };
+}
+
+async function stopTrace(context, { traceMode, tracePath, shouldKeep }) {
+  if (!context || traceMode === 'off') {
+    return { path: null, error: null };
+  }
+
+  try {
+    if (shouldKeep && tracePath) {
+      const resolved = path.resolve(tracePath);
+      await fs.mkdir(path.dirname(resolved), { recursive: true });
+      await context.tracing.stop({ path: resolved });
+      return { path: resolved, error: null };
+    }
+
+    await context.tracing.stop();
+    return { path: null, error: null };
+  } catch (error) {
+    return { path: null, error: compactMessage(error?.message || error) };
+  }
+}
+
 export async function runBrowserCheck(rawUrl, options = {}) {
   const target = new URL(rawUrl);
   const timeoutMs = options.timeoutMs ?? 30000;
@@ -38,6 +78,16 @@ export async function runBrowserCheck(rawUrl, options = {}) {
   const failConsoleErrors = options.failConsoleErrors ?? false;
   const screenshotPath = options.screenshotPath ?? null;
   const settleMs = options.settleMs ?? 750;
+  const profile = options.profile ?? 'desktop';
+  const traceMode = options.traceMode ?? 'off';
+  const tracePath = options.tracePath ?? null;
+
+  if (!['desktop', 'mobile'].includes(profile)) {
+    throw new Error('浏览器 profile 只支持 desktop 或 mobile');
+  }
+  if (!['off', 'on-failure', 'always'].includes(traceMode)) {
+    throw new Error('browser trace 只支持 off、on-failure 或 always');
+  }
 
   const pageErrors = [];
   const consoleErrors = [];
@@ -45,15 +95,26 @@ export async function runBrowserCheck(rawUrl, options = {}) {
   const badResponses = [];
 
   let browser;
+  let context;
+  let traceStarted = false;
+  let traceSavedPath = null;
+  let traceError = null;
 
   try {
     const { chromium } = await loadPlaywright();
     browser = await chromium.launch({ headless: true });
 
-    const context = await browser.newContext({
-      ignoreHTTPSErrors: false,
-      viewport: { width: 1440, height: 900 }
-    });
+    const ctxOptions = contextOptions(profile);
+    context = await browser.newContext(ctxOptions);
+
+    if (traceMode !== 'off') {
+      await context.tracing.start({
+        screenshots: true,
+        snapshots: true,
+        sources: false
+      });
+      traceStarted = true;
+    }
 
     const page = await context.newPage();
     page.setDefaultTimeout(timeoutMs);
@@ -79,7 +140,6 @@ export async function runBrowserCheck(rawUrl, options = {}) {
 
     page.on('response', (response) => {
       if (response.status() < 400) return;
-
       badResponses.push({
         url: response.url(),
         status: response.status(),
@@ -98,8 +158,6 @@ export async function runBrowserCheck(rawUrl, options = {}) {
 
     const finalUrl = page.url();
     const finalOrigin = new URL(finalUrl).origin;
-
-    // Re-evaluate same-origin network issues against the final page origin after redirects.
     const finalRequestFailures = requestFailures.filter((item) => isSameOrigin(item.url, finalOrigin));
     const finalBadResponses = badResponses.filter((item) => isSameOrigin(item.url, finalOrigin));
 
@@ -111,19 +169,6 @@ export async function runBrowserCheck(rawUrl, options = {}) {
     const bodyText = await page.locator('body').innerText().catch(() => '');
     const textLength = bodyText.trim().length;
     const renderedExpectOk = renderedExpect ? bodyText.includes(renderedExpect) : true;
-
-    let savedScreenshot = null;
-    let screenshotError = null;
-    if (screenshotPath) {
-      try {
-        const resolved = path.resolve(screenshotPath);
-        await fs.mkdir(path.dirname(resolved), { recursive: true });
-        await page.screenshot({ path: resolved, fullPage: true });
-        savedScreenshot = resolved;
-      } catch (error) {
-        screenshotError = compactMessage(error?.message || error);
-      }
-    }
 
     const failures = [];
 
@@ -160,15 +205,45 @@ export async function runBrowserCheck(rawUrl, options = {}) {
     if (textLength === 0) {
       warnings.push('页面渲染后 body 可见文本为空');
     }
-    if (screenshotError) {
-      warnings.push(`截图保存失败：${screenshotError}`);
+
+    let savedScreenshot = null;
+    let screenshotError = null;
+    if (screenshotPath) {
+      try {
+        const resolved = path.resolve(screenshotPath);
+        await fs.mkdir(path.dirname(resolved), { recursive: true });
+        await page.screenshot({ path: resolved, fullPage: true });
+        savedScreenshot = resolved;
+      } catch (error) {
+        screenshotError = compactMessage(error?.message || error);
+        warnings.push(`截图保存失败：${screenshotError}`);
+      }
+    }
+
+    if (traceStarted) {
+      const keepTrace = traceMode === 'always' || (traceMode === 'on-failure' && failures.length > 0);
+      const traceResult = await stopTrace(context, {
+        traceMode,
+        tracePath,
+        shouldKeep: keepTrace
+      });
+      traceSavedPath = traceResult.path;
+      traceError = traceResult.error;
+      traceStarted = false;
+
+      if (traceError) {
+        warnings.push(`Trace 保存失败：${traceError}`);
+      }
     }
 
     await context.close();
+    context = null;
 
     return {
       checked: true,
       ok: failures.length === 0,
+      profile,
+      viewport: ctxOptions.viewport,
       finalUrl,
       mainStatus: response?.status() ?? null,
       title,
@@ -183,14 +258,33 @@ export async function runBrowserCheck(rawUrl, options = {}) {
       criticalBadResponses,
       screenshotPath: savedScreenshot,
       screenshotError,
+      traceMode,
+      tracePath: traceSavedPath,
+      traceError,
       failures,
       warnings,
       error: null
     };
   } catch (error) {
+    const warnings = [];
+
+    if (traceStarted && context) {
+      const traceResult = await stopTrace(context, {
+        traceMode,
+        tracePath,
+        shouldKeep: true
+      });
+      traceSavedPath = traceResult.path;
+      traceError = traceResult.error;
+      traceStarted = false;
+      if (traceError) warnings.push(`Trace 保存失败：${traceError}`);
+    }
+
     return {
       checked: true,
       ok: false,
+      profile,
+      viewport: contextOptions(profile).viewport,
       finalUrl: null,
       mainStatus: null,
       title: null,
@@ -205,11 +299,24 @@ export async function runBrowserCheck(rawUrl, options = {}) {
       criticalBadResponses: [],
       screenshotPath: null,
       screenshotError: null,
+      traceMode,
+      tracePath: traceSavedPath,
+      traceError,
       failures: ['浏览器检查无法完成'],
-      warnings: [],
+      warnings,
       error: error?.message || String(error)
     };
   } finally {
+    if (context) {
+      if (traceStarted) {
+        await stopTrace(context, {
+          traceMode,
+          tracePath,
+          shouldKeep: true
+        }).catch(() => {});
+      }
+      await context.close().catch(() => {});
+    }
     if (browser) {
       await browser.close().catch(() => {});
     }
@@ -221,6 +328,8 @@ export function skippedBrowser(reason = '未启用浏览器检查') {
     checked: false,
     ok: true,
     reason,
+    profile: null,
+    viewport: null,
     finalUrl: null,
     mainStatus: null,
     title: null,
@@ -235,6 +344,9 @@ export function skippedBrowser(reason = '未启用浏览器检查') {
     criticalBadResponses: [],
     screenshotPath: null,
     screenshotError: null,
+    traceMode: 'off',
+    tracePath: null,
+    traceError: null,
     failures: [],
     warnings: [],
     error: null
