@@ -14,11 +14,13 @@
   <img src=".github/assets/proddoctor-hero.svg" alt="ProdDoctor - post-deploy production validation" width="100%">
 </p>
 
-**Post-deploy production validation for real websites.**
+**部署后直接验证真实生产环境，并帮你缩小故障范围。**
 
-ProdDoctor 在部署完成后直接检查用户真正访问到的生产环境。它不会只停在“Build 成功”或“Deploy 命令成功”，而是继续验证 DNS、HTTP、TLS、真实页面内容、Cloudflare/WAF、同源资源，以及可选的 Chromium 运行时。
+ProdDoctor 在部署完成后直接检查用户真正访问到的生产环境。它不会只停在“Build 成功”或“Deploy 命令成功”，而是继续验证 DNS、HTTP、TLS、真实页面内容、同源资源、Cloudflare/WAF，以及可选的 Chromium 运行时。
 
-> **CI 是绿的，不代表生产网站真的正常。**
+当检查失败时，ProdDoctor 不只是给出一个红叉。它会把问题缩小到更可能出错的层级，并保留失败请求、截图、Playwright Trace、HTML / JSON 报告等调试证据。
+
+> **Deploy 绿了，不代表生产环境正常。ProdDoctor 会继续检查用户真正访问到的那一层，并告诉你大概率坏在哪。**
 
 ## 版本与稳定性
 
@@ -74,7 +76,7 @@ git rev-list -n 1 v1.4.0
   <img src=".github/assets/proddoctor-demo.svg" alt="ProdDoctor detects a real production-domain failure after CI passes" width="100%">
 </p>
 
-上面的场景里，构建、部署和平台地址都正常，但真实生产域名返回 Cloudflare 403。ProdDoctor 会让 Workflow 直接失败，并给出更具体的故障方向，而不是等用户先发现问题。
+上面的场景里，构建、部署和平台地址都正常，但真实生产域名返回 Cloudflare 403。ProdDoctor 不会只给出一个笼统的失败：它会显示 DNS 正常、HTTP 403，并把 Cloudflare Challenge / WAF 标为更可能的故障层，从而把排查范围缩小到边缘 / 安全层，同时保留报告证据供后续调试。
 
 ## 它会检查什么
 
