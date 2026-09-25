@@ -10,7 +10,7 @@
   </style>
   <text x="60" y="96" class="sans" font-size="70" font-weight="800" fill="#f5f7fa">ProdDoctor</text>
   <text x="60" y="142" class="sans" font-size="32" font-weight="700" fill="#f5f7fa">Your deploy is green. Is production actually healthy?</text>
-  <text x="60" y="182" class="sans" font-size="24" fill="#9ba7b9">DNS • HTTP • TLS • assets • Cloudflare/WAF • real Chromium</text>
+  <text x="60" y="182" class="sans" font-size="24" fill="#9ba7b9">Detect failures • narrow the layer • keep the evidence</text>
   <rect x="60" y="230" width="1080" height="240" rx="20" fill="#0b111a" stroke="#2d3b4e" stroke-width="2"/>
   <circle cx="92" cy="260" r="7" fill="#ff5f56"/>
   <circle cx="116" cy="260" r="7" fill="#ffbd2e"/>
