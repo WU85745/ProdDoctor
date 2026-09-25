@@ -66,7 +66,7 @@ async function fetchOnce(url, {
       method,
       redirect: 'follow',
       headers: {
-        'user-agent': 'ProdDoctor/0.3 (+https://github.com/WU85745/ProdDoctor)',
+        'user-agent': 'ProdDoctor/0.4 (+https://github.com/WU85745/ProdDoctor)',
         accept: 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
         'cache-control': 'no-cache'
       },
@@ -182,6 +182,9 @@ export async function runChecks(rawUrl, options = {}) {
   const browserFailConsoleErrors = options.browserFailConsoleErrors ?? false;
   const browserScreenshotPath = options.browserScreenshotPath ?? null;
   const browserSettleMs = options.browserSettleMs ?? 750;
+  const browserProfile = options.browserProfile ?? 'desktop';
+  const browserTraceMode = options.browserTraceMode ?? 'off';
+  const browserTracePath = options.browserTracePath ?? null;
 
   let dnsResult;
   const dnsStarted = performance.now();
@@ -242,7 +245,10 @@ export async function runChecks(rawUrl, options = {}) {
       renderedExpect: browserRenderedExpect,
       failConsoleErrors: browserFailConsoleErrors,
       screenshotPath: browserScreenshotPath,
-      settleMs: browserSettleMs
+      settleMs: browserSettleMs,
+      profile: browserProfile,
+      traceMode: browserTraceMode,
+      tracePath: browserTracePath
     });
   }
 
@@ -314,7 +320,7 @@ export async function runChecks(rawUrl, options = {}) {
 
   return {
     tool: 'ProdDoctor',
-    version: '0.3.0',
+    version: '0.4.0',
     checkedAt: new Date().toISOString(),
     target: target.href,
     hostname: target.hostname,

@@ -1,41 +1,49 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import { runChecks } from '../src/checker.mjs';
 import { toChineseReport, toMarkdownSummary } from '../src/report.mjs';
+import { toHtmlReport } from '../src/html-report.mjs';
 
 function usage() {
-  console.log(`ProdDoctor v0.3.0
+  console.log(`ProdDoctor v0.4.0
 
 用法：
   proddoctor <URL> [选项]
 
 基础检查：
-  --expect <文本>          要求原始 HTML 包含指定文本
-  --status <状态码>        要求最终 HTTP 状态精确匹配，例如 200
-  --timeout <毫秒>        单次 HTTP 请求超时，默认 15000
-  --retries <次数>        失败后的重试次数，默认 1
-  --no-assets             不检查同源 JS/CSS 静态资源
-  --max-assets <数量>     最多检查的静态资源数量，默认 20
-  --tls-warn-days <天>    TLS 证书进入该剩余天数时给出提示，默认 14
+  --expect <文本>              要求原始 HTML 包含指定文本
+  --status <状态码>            要求最终 HTTP 状态精确匹配，例如 200
+  --timeout <毫秒>            单次 HTTP 请求超时，默认 15000
+  --retries <次数>            失败后的重试次数，默认 1
+  --no-assets                 不检查同源 JS/CSS 静态资源
+  --max-assets <数量>         最多检查的静态资源数量，默认 20
+  --tls-warn-days <天>        TLS 证书进入该剩余天数时给出提示，默认 14
 
 浏览器检查：
-  --browser               使用 Playwright + Chromium 执行真实浏览器检查
-  --browser-expect <文本> 要求浏览器渲染后的可见文本包含指定内容
-  --browser-timeout <毫秒> 浏览器导航超时，默认 30000
-  --browser-settle <毫秒> DOMContentLoaded 后额外等待时间，默认 750
-  --browser-fail-console  Console error 也作为阻断问题
+  --browser                   使用 Playwright + Chromium 执行真实浏览器检查
+  --browser-expect <文本>     要求浏览器渲染后的可见文本包含指定内容
+  --browser-timeout <毫秒>    浏览器导航超时，默认 30000
+  --browser-settle <毫秒>     DOMContentLoaded 后额外等待时间，默认 750
+  --browser-fail-console      Console error 也作为阻断问题
+  --browser-profile <类型>    desktop 或 mobile，默认 desktop
   --browser-screenshot <路径> 保存整页截图
+  --browser-trace <模式>      off / on-failure / always，默认 off
+  --browser-trace-path <路径> Trace ZIP 保存路径
 
 输出：
-  --json                  输出 JSON
-  --json-file <路径>      额外保存 JSON 报告
-  --help                  显示帮助
+  --json                      输出 JSON
+  --json-file <路径>          保存 JSON 报告
+  --html-report <路径>        保存独立 HTML 报告
+  --help                      显示帮助
 
 示例：
   proddoctor https://example.com
   proddoctor https://example.com --expect "Example Domain" --status 200
   proddoctor https://example.com --browser --browser-expect "Example Domain"
-  proddoctor https://example.com --browser --browser-screenshot ./production.png
+  proddoctor https://example.com --browser --browser-profile mobile
+  proddoctor https://example.com --browser --browser-trace on-failure --browser-trace-path ./trace.zip
+  proddoctor https://example.com --html-report ./report.html --json-file ./report.json
 `);
 }
 
@@ -61,6 +69,12 @@ function value(name, fallback = null, { allowEmpty = false } = {}) {
   return next;
 }
 
+async function writeTextFile(filePath, content) {
+  const full = path.resolve(filePath);
+  await fs.mkdir(path.dirname(full), { recursive: true });
+  await fs.writeFile(full, content, 'utf8');
+}
+
 try {
   const parsedUrl = new URL(url.includes('://') ? url : `https://${url}`);
   if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
@@ -81,7 +95,10 @@ try {
   const browserTimeoutMs = Number(value('--browser-timeout', '30000'));
   const browserSettleMs = Number(value('--browser-settle', '750'));
   const browserFailConsoleErrors = args.includes('--browser-fail-console');
+  const browserProfile = value('--browser-profile', 'desktop');
   const browserScreenshotPath = value('--browser-screenshot', null);
+  const browserTraceMode = value('--browser-trace', 'off');
+  const browserTracePath = value('--browser-trace-path', null);
 
   if (!Number.isFinite(timeoutMs) || timeoutMs < 100) {
     throw new Error('--timeout 必须是 >= 100 的数字');
@@ -104,10 +121,22 @@ try {
   if (!Number.isInteger(browserSettleMs) || browserSettleMs < 0 || browserSettleMs > 60000) {
     throw new Error('--browser-settle 必须是 0 到 60000 的整数');
   }
+  if (!['desktop', 'mobile'].includes(browserProfile)) {
+    throw new Error('--browser-profile 只支持 desktop 或 mobile');
+  }
+  if (!['off', 'on-failure', 'always'].includes(browserTraceMode)) {
+    throw new Error('--browser-trace 只支持 off、on-failure 或 always');
+  }
+  if (browserTraceMode !== 'off' && !browserTracePath) {
+    throw new Error('启用 --browser-trace 时必须同时提供 --browser-trace-path');
+  }
   if (!browserEnabled && (
     browserRenderedExpect ||
     browserFailConsoleErrors ||
-    browserScreenshotPath
+    browserScreenshotPath ||
+    browserTraceMode !== 'off' ||
+    browserTracePath ||
+    browserProfile !== 'desktop'
   )) {
     throw new Error('浏览器专用参数需要同时启用 --browser');
   }
@@ -125,12 +154,20 @@ try {
     browserTimeoutMs,
     browserSettleMs,
     browserFailConsoleErrors,
-    browserScreenshotPath
+    browserProfile,
+    browserScreenshotPath,
+    browserTraceMode,
+    browserTracePath
   });
 
   const jsonFile = value('--json-file', process.env.PRODDOCTOR_JSON_FILE || null);
   if (jsonFile) {
-    await fs.writeFile(jsonFile, `${JSON.stringify(result, null, 2)}\n`, 'utf8');
+    await writeTextFile(jsonFile, `${JSON.stringify(result, null, 2)}\n`);
+  }
+
+  const htmlReport = value('--html-report', process.env.PRODDOCTOR_HTML_REPORT || null);
+  if (htmlReport) {
+    await writeTextFile(htmlReport, toHtmlReport(result, { reportPath: htmlReport }));
   }
 
   if (process.env.GITHUB_STEP_SUMMARY) {

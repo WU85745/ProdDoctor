@@ -9,6 +9,7 @@ on:
       - src/browser.mjs
       - src/checker.mjs
       - src/report.mjs
+      - src/html-report.mjs
       - .github/workflows/browser-smoke.yml
   pull_request:
     paths:
@@ -17,6 +18,7 @@ on:
       - src/browser.mjs
       - src/checker.mjs
       - src/report.mjs
+      - src/html-report.mjs
       - .github/workflows/browser-smoke.yml
   workflow_dispatch:
 
@@ -30,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run ProdDoctor with Chromium
+      - name: Run ProdDoctor with Chromium evidence
         uses: ./
         with:
           url: https://example.com
@@ -40,4 +42,19 @@ jobs:
           browser_timeout: 30000
           browser_settle: 250
           browser_fail_console: false
+          browser_profile: mobile
+          browser_trace: always
           upload_screenshot: true
+          upload_report: true
+
+      - name: Verify evidence bundle
+        shell: bash
+        run: |
+          test -s proddoctor-evidence/browser.png
+          test -s proddoctor-evidence/trace.zip
+          test -s proddoctor-evidence/report.json
+          test -s proddoctor-evidence/report.html
+
+          grep -q 'ProdDoctor Production Report' proddoctor-evidence/report.html
+          grep -q '"profile": "mobile"' proddoctor-evidence/report.json
+          grep -q '"version": "0.4.0"' proddoctor-evidence/report.json

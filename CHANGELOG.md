@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0
+
+- Add desktop and mobile browser profiles.
+- Add Playwright Trace recording with `off`, `on-failure`, and `always` modes.
+- Add standalone HTML Production Reports.
+- Bundle browser screenshot, JSON report, HTML report, and Trace into one evidence artifact.
+- Keep Trace retention failure-oriented by default to reduce artifact noise.
+- Add regression tests for HTML escaping and report evidence links.
+- Expand browser smoke tests to verify mobile mode and all generated evidence files.
+
 ## 0.3.0
 
 - Add optional Playwright + Chromium browser validation.
