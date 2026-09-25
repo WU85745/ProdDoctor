@@ -95,7 +95,9 @@ async function retryFetch(url, options) {
     const result = await fetchOnce(url, options);
     attempts.push(result);
     if (result.ok) return { ...result, attempts: attempts.length };
-    if (i < options.retries) await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (i < options.retries) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
   }
   return { ...attempts.at(-1), attempts: attempts.length };
 }
@@ -114,6 +116,10 @@ async function checkAuxiliary(origin, pathname, timeoutMs) {
 
 export async function runChecks(rawUrl, options = {}) {
   const target = new URL(rawUrl.includes('://') ? rawUrl : `https://${rawUrl}`);
+  if (!['http:', 'https:'].includes(target.protocol)) {
+    throw new Error('URL 仅支持 http:// 或 https://');
+  }
+
   const timeoutMs = options.timeoutMs ?? 15000;
   const retries = options.retries ?? 1;
   const expected = options.expected ?? '';
@@ -137,10 +143,10 @@ export async function runChecks(rawUrl, options = {}) {
   }
 
   const page = await retryFetch(target.href, { timeoutMs, retries, expected });
-  const origin = target.origin;
+  const auxiliaryOrigin = page.finalUrl ? new URL(page.finalUrl).origin : target.origin;
   const [robots, sitemap] = await Promise.all([
-    checkAuxiliary(origin, '/robots.txt', timeoutMs),
-    checkAuxiliary(origin, '/sitemap.xml', timeoutMs)
+    checkAuxiliary(auxiliaryOrigin, '/robots.txt', timeoutMs),
+    checkAuxiliary(auxiliaryOrigin, '/sitemap.xml', timeoutMs)
   ]);
 
   const warnings = [];
