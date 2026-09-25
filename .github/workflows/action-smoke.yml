@@ -9,6 +9,13 @@ on:
       - src/**
       - test/**
       - .github/workflows/action-smoke.yml
+  pull_request:
+    paths:
+      - action.yml
+      - bin/**
+      - src/**
+      - test/**
+      - .github/workflows/action-smoke.yml
   workflow_dispatch:
 
 permissions:
@@ -20,17 +27,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Minimal usage without expect
+      - name: Minimal usage with v0.2 defaults
         uses: ./
         with:
           url: https://example.com
           retries: 1
           timeout: 15000
 
-      - name: Usage with expected page text
+      - name: Expected content and exact status
         uses: ./
         with:
           url: https://example.com
           expect: Example Domain
+          status: 200
           retries: 1
           timeout: 15000
+          check_assets: true
+          max_assets: 20
+          tls_warn_days: 14
+
+      - name: Assets can be disabled
+        uses: ./
+        with:
+          url: https://example.com
+          check_assets: false
