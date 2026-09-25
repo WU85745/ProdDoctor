@@ -57,4 +57,4 @@ jobs:
 
           grep -q 'ProdDoctor Production Report' proddoctor-evidence/report.html
           grep -q '"profile": "mobile"' proddoctor-evidence/report.json
-          grep -q '"version": "0.4.0"' proddoctor-evidence/report.json
+          grep -q '"version": "1.4.0"' proddoctor-evidence/report.json
