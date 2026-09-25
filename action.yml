@@ -1,0 +1,42 @@
+name: 'ProdDoctor'
+description: '部署后检查真实生产域名，而不是只相信 CI 绿灯。'
+author: 'Lucas Lu'
+branding:
+  icon: 'activity'
+  color: 'green'
+inputs:
+  url:
+    description: '要检查的真实生产 URL'
+    required: true
+  expect:
+    description: '页面必须包含的关键文本，可留空'
+    required: false
+    default: ''
+  retries:
+    description: '失败后的重试次数'
+    required: false
+    default: '2'
+  timeout:
+    description: '单次请求超时（毫秒）'
+    required: false
+    default: '15000'
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: ProdDoctor production check
+      shell: bash
+      env:
+        PROD_DOCTOR_URL: ${{ inputs.url }}
+        PROD_DOCTOR_EXPECT: ${{ inputs.expect }}
+        PROD_DOCTOR_RETRIES: ${{ inputs.retries }}
+        PROD_DOCTOR_TIMEOUT: ${{ inputs.timeout }}
+      run: |
+        node "$GITHUB_ACTION_PATH/bin/proddoctor.mjs" \
+          "$PROD_DOCTOR_URL" \
+          --expect "$PROD_DOCTOR_EXPECT" \
+          --retries "$PROD_DOCTOR_RETRIES" \
+          --timeout "$PROD_DOCTOR_TIMEOUT"
