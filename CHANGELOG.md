@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0
+
+- Add optional Playwright + Chromium browser validation.
+- Detect uncaught JavaScript page errors.
+- Track same-origin critical document, script and stylesheet failures in the browser.
+- Track same-origin critical 4xx/5xx browser responses.
+- Add rendered-text assertions with `browser_expect`.
+- Record Console errors and optionally fail on them.
+- Capture full-page screenshots and upload them as GitHub Actions artifacts.
+- Keep browser mode opt-in so the default HTTP checks remain lightweight.
+- Install Playwright in an isolated runner temp directory instead of modifying the user's project dependencies.
+- Add a real Chromium smoke-test workflow.
+
 ## 0.2.0
 
 - Add TLS certificate-chain and expiry checks.
