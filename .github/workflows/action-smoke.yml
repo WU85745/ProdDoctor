@@ -1,0 +1,27 @@
+name: Smoke test GitHub Action
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - action.yml
+      - bin/**
+      - src/**
+      - .github/workflows/action-smoke.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use ProdDoctor as a local Action
+        uses: ./
+        with:
+          url: https://example.com
+          expect: Example Domain
+          retries: 1
+          timeout: 15000
