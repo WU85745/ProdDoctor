@@ -92,7 +92,7 @@ git rev-list -n 1 v1.4.0
 - 请求耗时、失败重试、JSON 输出
 - GitHub Actions Job Summary
 
-> v1.4 默认仍保持轻量 HTTP 检查；需要时可以启用 Playwright + Chromium 浏览器模式。浏览器模式现在还可以生成移动端证据、失败 Trace、整页截图，以及独立的 HTML / JSON Production Report。
+> v1.4.0 默认仍保持轻量 HTTP 检查；需要时可以启用 Playwright + Chromium 浏览器模式。浏览器模式现在还可以生成移动端证据、失败 Trace、整页截图，以及独立的 HTML / JSON Production Report。
 
 ---
 
@@ -357,7 +357,7 @@ with:
 
 ### Evidence Artifact
 
-v1.4 会把浏览器证据集中放在一个 Artifact 中：
+v1.4.0 会把浏览器证据集中放在一个 Artifact 中：
 
 ```text
 proddoctor-evidence-<job>/
