@@ -37,7 +37,7 @@ function replaceRequired(text, pattern, replacement, label) {
 
 let changed = false;
 
-changed ||= updateFile('README.md', (input) => {
+changed = updateFile('README.md', (input) => {
   let text = input;
 
   text = replaceRequired(
@@ -95,26 +95,26 @@ changed ||= updateFile('README.md', (input) => {
   );
 
   return text;
-});
+}) || changed;
 
 for (const path of ['examples/production-check.yml', 'examples/browser-check.yml']) {
-  changed ||= updateFile(path, (input) =>
+  changed = updateFile(path, (input) =>
     input
       .replace(/v\d+\.\d+\.\d+/g, `v${version}`)
       .replace(/WU85745\/ProdDoctor@v\d+\.\d+\.\d+/g, `WU85745/ProdDoctor@v${version}`)
-  );
+  ) || changed;
 }
 
-changed ||= updateFile('bin/proddoctor.mjs', (input) =>
+changed = updateFile('bin/proddoctor.mjs', (input) =>
   replaceRequired(
     input,
     /ProdDoctor v\d+\.\d+\.\d+/,
     `ProdDoctor v${version}`,
     'CLI 版本'
   )
-);
+) || changed;
 
-changed ||= updateFile('src/checker.mjs', (input) => {
+changed = updateFile('src/checker.mjs', (input) => {
   let text = input;
   text = replaceRequired(
     text,
@@ -129,34 +129,34 @@ changed ||= updateFile('src/checker.mjs', (input) => {
     'JSON report version'
   );
   return text;
-});
+}) || changed;
 
-changed ||= updateFile('src/assets.mjs', (input) =>
+changed = updateFile('src/assets.mjs', (input) =>
   replaceRequired(
     input,
     /ProdDoctor\/\d+\.\d+\.\d+ \(\+https:\/\/github\.com\/WU85745\/ProdDoctor\)/,
     `ProdDoctor/${version} (+https://github.com/WU85745/ProdDoctor)`,
     'asset User-Agent'
   )
-);
+) || changed;
 
-changed ||= updateFile('test/html-report.test.mjs', (input) =>
+changed = updateFile('test/html-report.test.mjs', (input) =>
   replaceRequired(
     input,
     /version: '\d+\.\d+\.\d+'/,
     `version: '${version}'`,
     'HTML report fixture version'
   )
-);
+) || changed;
 
-changed ||= updateFile('.github/workflows/browser-smoke.yml', (input) =>
+changed = updateFile('.github/workflows/browser-smoke.yml', (input) =>
   replaceRequired(
     input,
     /"version": "\d+\.\d+\.\d+"/,
     `"version": "${version}"`,
     'browser smoke report version'
   )
-);
+) || changed;
 
 if (mode === 'check' && changed) {
   console.error('运行 npm run release:sync 同步版本引用。');
