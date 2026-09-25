@@ -208,15 +208,6 @@ changed = updateFile('test/html-report.test.mjs', (input) =>
   )
 ) || changed;
 
-changed = updateFile('.github/workflows/browser-smoke.yml', (input) =>
-  replaceRequired(
-    input,
-    /"version": "\d+\.\d+\.\d+"/,
-    `"version": "${version}"`,
-    'browser smoke report version'
-  )
-) || changed;
-
 if (mode === 'check' && changed) {
   console.error('运行 npm run release:sync 同步版本引用。');
   process.exit(1);

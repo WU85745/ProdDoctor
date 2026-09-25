@@ -61,6 +61,7 @@ jobs:
         env:
           EVIDENCE_DIR: ${{ steps.main-browser.outputs.evidence_dir }}
         run: |
+          node scripts/verify-report-version.mjs "$EVIDENCE_DIR/report.json"
           test -s "$EVIDENCE_DIR/report.json"
           test -s "$EVIDENCE_DIR/report.html"
           test -s "$EVIDENCE_DIR/browser.png"
@@ -130,10 +131,12 @@ jobs:
         run: |
           set -euo pipefail
           npm run release:sync
+          # The default workflow token must never need workflows write permission.
+          git diff --exit-code -- .github/workflows
           if ! git diff --quiet; then
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add README.md README.zh-CN.md package.json bin src test examples .github/workflows .release-please-manifest.json
+            git add README.md README.zh-CN.md package.json bin src test examples .release-please-manifest.json
             git commit -m 'chore: sync release version references'
             git push origin "HEAD:$PR_HEAD"
           fi
@@ -178,6 +181,7 @@ jobs:
           EXPECTED_SHA: ${{ steps.gate.outputs.sha }}
         run: |
           set -euo pipefail
+          node scripts/verify-report-version.mjs "$EVIDENCE_DIR/report.json"
           test -s "$EVIDENCE_DIR/browser.png"
           test -s "$EVIDENCE_DIR/report.html"
           test -s "$EVIDENCE_DIR/report.json"

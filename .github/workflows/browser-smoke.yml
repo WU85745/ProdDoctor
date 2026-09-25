@@ -58,6 +58,7 @@ jobs:
         env:
           EVIDENCE_DIR: ${{ steps.doctor.outputs.evidence_dir }}
         run: |
+          node scripts/verify-report-version.mjs "$EVIDENCE_DIR/report.json"
           cd "$EVIDENCE_DIR"
           test -s browser.png
           test -s trace.zip
@@ -66,7 +67,6 @@ jobs:
 
           grep -q 'ProdDoctor Production Report' report.html
           grep -q '"profile": "mobile"' report.json
-          grep -q '"version": "1.4.0"' report.json
 
       - name: A second browser invocation cannot overwrite the first evidence
         id: second

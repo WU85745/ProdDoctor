@@ -19,6 +19,10 @@ test('version sync updates all public refs after owner rename and is idempotent'
     fs.cpSync(path.join(root, entry), path.join(dir, entry), { recursive: true });
   }
   const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json')));
+  const workflowsDir = path.join(dir, '.github/workflows');
+  const workflowsBefore = Object.fromEntries(fs.readdirSync(workflowsDir).map(file => [
+    file, fs.readFileSync(path.join(workflowsDir, file), 'utf8')
+  ]));
   pkg.version = '8.2.7';
   fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify(pkg));
   for (const file of ['README.md', 'README.zh-CN.md', 'src/checker.mjs', 'src/assets.mjs']) {
@@ -30,6 +34,10 @@ test('version sync updates all public refs after owner rename and is idempotent'
   assert.equal(invoke('--write').status, 0);
   assert.equal(invoke('--check').status, 0);
   assert.match(invoke('--write').stdout, /synced at 8.2.7/);
+  const workflowsAfter = Object.fromEntries(fs.readdirSync(workflowsDir).map(file => [
+    file, fs.readFileSync(path.join(workflowsDir, file), 'utf8')
+  ]));
+  assert.deepEqual(workflowsAfter, workflowsBefore, 'Version sync must not modify workflow files');
   const readme = fs.readFileSync(path.join(dir, 'README.md'), 'utf8');
   const chineseReadme = fs.readFileSync(path.join(dir, 'README.zh-CN.md'), 'utf8');
   for (const [label, content] of [['English README', readme], ['Chinese README', chineseReadme]]) {
@@ -40,6 +48,20 @@ test('version sync updates all public refs after owner rename and is idempotent'
   }
   assert.match(fs.readFileSync(path.join(dir, 'src/checker.mjs'), 'utf8'), /ProdDoctor\/8\.2\.7/);
 });
+
+for (const [name, report, succeeds] of [
+  ['current package version', {version: JSON.parse(fs.readFileSync(path.join(root, 'package.json'))).version}, true],
+  ['wrong version', {version: '999.0.0'}, false],
+  ['missing version', {}, false]
+]) {
+  test('evidence version check: ' + name, t => {
+    const dir = temporary(t);
+    const reportPath = path.join(dir, 'report.json');
+    fs.writeFileSync(reportPath, JSON.stringify(report));
+    const result = spawnSync(process.execPath, [script('verify-report-version.mjs'), reportPath], {cwd: dir, encoding: 'utf8'});
+    assert.equal(result.status === 0, succeeds, result.stdout + result.stderr);
+  });
+}
 
 for (const [message, version, expected] of [
   ['fix: regression', '1.4.1', 0],
