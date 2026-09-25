@@ -53,13 +53,13 @@ function sampleResult() {
 }
 
 test('HTML report 包含关键证据链接和浏览器 profile', () => {
-  const html = toHtmlReport(sampleResult());
+  const html = toHtmlReport(sampleResult(), { reportPath: '/tmp/reports/report.html' });
 
   assert.match(html, /ProdDoctor Production Report/);
   assert.match(html, /mobile/);
   assert.match(html, /390×844/);
-  assert.match(html, /browser\.png/);
-  assert.match(html, /trace\.zip/);
+  assert.match(html, /\.\.\/browser\.png/);
+  assert.match(html, /\.\.\/trace\.zip/);
 });
 
 test('HTML report 会转义来自目标站点和错误信息的 HTML', () => {
