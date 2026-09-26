@@ -42,6 +42,7 @@ jobs:
         uses: ./
         with:
           url: https://example.com
+          language: en
           status: 200
           browser: true
           browser_expect: Example Domain
