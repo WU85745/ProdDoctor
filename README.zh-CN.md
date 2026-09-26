@@ -97,6 +97,33 @@ ProdDoctor 不只是做一次存活探测。它更想回答一个真正有用的
 - 可维护浮动 major tag（例如 `v1`）指向当前 1.x 最新发布，但它会移动，不适合要求严格可复现的生产流水线。
 
 
+
+## 如何锁定版本
+
+三种常见写法的用途不同：
+
+| 引用方式 | 适合场景 | 稳定性 |
+|---|---|---|
+| `lucaswenbo/ProdDoctor@main` | 开发、试用、验证最新代码 | 会随 main 变化，不建议用于生产门禁 |
+| `lucaswenbo/ProdDoctor@v1.4.1` | 推荐入门和一般项目接入 | 具体版本 tag，按项目约定发布后不移动 |
+| `lucaswenbo/ProdDoctor@<commit-sha>` | 生产流水线、严格可复现环境 | 最稳定，精确锁定到一个提交 |
+
+生产环境建议使用：
+
+```yaml
+- uses: lucaswenbo/ProdDoctor@<commit-sha>
+  with:
+    url: https://example.com
+```
+
+不要把 `<commit-sha>` 原样复制。发布 `v1.4.1` 后，可以从 GitHub **Releases / v1.4.1 tag 页面**进入该版本对应的 commit，再复制完整 SHA；本地已拉取 tag 时也可以运行：
+
+```bash
+git rev-list -n 1 v1.4.1
+```
+
+得到该 tag 对应的完整 commit SHA 后，再替换 Workflow 里的占位符。
+
 ---
 
 # 方法一：在 GitHub Actions 中使用
