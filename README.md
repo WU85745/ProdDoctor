@@ -31,6 +31,8 @@ It validates DNS, HTTP, TLS, expected page content, same-origin assets, Cloudfla
 
 ## 30-second setup
 
+This is a **GitHub Actions step**, not a terminal command. Put it in the repository of the website you want to validate, inside a workflow such as `.github/workflows/production-check.yml` under a job's `steps:`.
+
 ```yaml
 - uses: lucaswenbo/ProdDoctor@v1.5.0
   with:
