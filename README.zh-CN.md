@@ -31,6 +31,8 @@ ProdDoctor 会在部署之后继续检查**用户真正访问到的那条生产�
 
 ## 30 秒接入
 
+下面这段是 **GitHub Actions 的一个 step**，不是终端命令。把它放到你要检查的网站仓库中，例如 `.github/workflows/production-check.yml`，并放在某个 job 的 `steps:` 下面。
+
 ```yaml
 - uses: lucaswenbo/ProdDoctor@v1.5.0
   with:
