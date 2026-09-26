@@ -12,7 +12,7 @@ inputs:
   language:
     description: 'Human-readable output language: en or zh-CN'
     required: false
-    default: 'en'
+    default: 'zh-CN'
   expect:
     description: 'Text that must appear in the raw HTML; leave empty to disable'
     required: false
