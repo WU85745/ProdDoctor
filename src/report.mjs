@@ -128,16 +128,16 @@ export function likelyCause(result, language = 'en') {
       : `The production endpoint returned an unexpected HTTP ${page.status}.`;
   }
 
-  if (!page.ok && page.expected && !page.expectedOk) {
-    return zh
-      ? '生产页面可以响应，但返回的内容不是预期版本或页面。'
-      : 'The production page responded, but its content did not match the expected page or version.';
-  }
-
   if (!page.ok && page.error) {
     return zh
       ? '生产请求在获得有效响应前失败。'
       : 'The production request failed before a valid response was received.';
+  }
+
+  if (!page.ok && page.expected && !page.expectedOk) {
+    return zh
+      ? '生产页面可以响应，但返回的内容不是预期版本或页面。'
+      : 'The production page responded, but its content did not match the expected page or version.';
   }
 
   if (result.assets?.checked && !result.assets.ok) {
