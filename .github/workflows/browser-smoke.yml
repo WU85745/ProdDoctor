@@ -42,7 +42,6 @@ jobs:
         uses: ./
         with:
           url: https://example.com
-          language: en
           status: 200
           browser: true
           browser_expect: Example Domain
@@ -69,11 +68,12 @@ jobs:
           grep -q 'ProdDoctor Production Report' report.html
           grep -q '"profile": "mobile"' report.json
 
-      - name: A second browser invocation cannot overwrite the first evidence
+      - name: A second Chinese browser invocation cannot overwrite the first evidence
         id: second
         uses: ./
         with:
           url: https://example.com
+          language: zh-CN
           browser: true
           browser_expect: Example Domain
           browser_trace: always

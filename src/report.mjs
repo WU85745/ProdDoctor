@@ -16,7 +16,8 @@ function translateBrowserDiagnostic(text) {
     [/^浏览器 Console 出现 (\d+) 条 error（当前仅提示）$/, 'Browser console reported $1 error(s) (warning only)'],
     [/^页面渲染后 body 可见文本为空$/, 'Visible body text is empty after rendering'],
     [/^截图保存失败：(.*)$/, 'Failed to save screenshot: $1'],
-    [/^Trace 保存失败：(.*)$/, 'Failed to save trace: $1']
+    [/^Trace 保存失败：(.*)$/, 'Failed to save trace: $1'],
+    [/^浏览器检查无法完成$/, 'Browser check could not complete']
   ];
   for (const [pattern, replacement] of rules) {
     if (pattern.test(text)) return text.replace(pattern, replacement);
@@ -51,7 +52,12 @@ export function localizeDiagnostic(text, language = 'en') {
     [/^TLS 证书校验失败：(.*)$/, 'TLS certificate validation failed: $1'],
     [/^TLS 证书检查失败$/, 'TLS certificate check failed'],
     [/^发现 (\d+) 个不可用或返回异常内容的同源 JS\/CSS 资源$/, 'Found $1 unavailable or invalid same-origin JS/CSS asset(s)'],
-    [/^浏览器检查失败：(.*)$/, 'Browser check failed: $1']
+    [/^浏览器检查失败：(.*)$/, 'Browser check failed: $1'],
+    [/^浏览器检查无法完成$/, 'Browser check could not complete'],
+    [/^未启用静态资源检查$/, 'Static asset checks disabled'],
+    [/^生产页面没有可分析的响应正文$/, 'Production page has no response body to analyze'],
+    [/^页面 Content-Type 不是 HTML：(.*)$/, 'Page Content-Type is not HTML: $1'],
+    [/^未启用浏览器检查$/, 'Browser checks disabled']
   ];
   for (const [pattern, replacement] of rules) {
     if (pattern.test(value)) return value.replace(pattern, replacement);
@@ -81,45 +87,51 @@ function browserIssueLine(item, language) {
 function toTextReport(result, language) {
   const lang = normalizeLanguage(language);
   const zh = lang === 'zh-CN';
+  const colon = zh ? '：' : ': ';
+  const comma = zh ? '，' : ', ';
+  const semicolon = zh ? '；' : '; ';
+  const quote = (value) => zh ? `“${value}”` : `"${value}"`;
   const lines = [];
+
   lines.push('');
   lines.push(zh ? '🩺 ProdDoctor 生产环境体检' : '🩺 ProdDoctor production check');
-  lines.push(`${zh ? '目标' : 'Target'}：${result.target}`);
-  lines.push(`${zh ? '结果' : 'Result'}：${result.ok ? (zh ? '✅ 通过' : '✅ PASS') : (zh ? '❌ 未通过' : '❌ FAIL')}`);
+  lines.push(`${zh ? '目标' : 'Target'}${colon}${result.target}`);
+  lines.push(`${zh ? '结果' : 'Result'}${colon}${result.ok ? (zh ? '✅ 通过' : '✅ PASS') : (zh ? '❌ 未通过' : '❌ FAIL')}`);
   lines.push('');
 
   const dnsFail = zh ? '失败' : 'failed';
-  lines.push(`${icon(result.dns.ok)} DNS：${result.dns.ok ? result.dns.addresses.map(x => x.address).join(', ') : result.dns.error || dnsFail} (${result.dns.elapsedMs}ms)`);
+  lines.push(`${icon(result.dns.ok)} DNS${colon}${result.dns.ok ? result.dns.addresses.map(x => x.address).join(', ') : result.dns.error || dnsFail} (${result.dns.elapsedMs}ms)`);
 
   const statusExpectation = result.page.expectedStatus === null
     ? ''
     : (zh ? `，预期 ${result.page.expectedStatus}` : `, expected ${result.page.expectedStatus}`);
   const noResponse = zh ? '无响应' : 'no response';
-  lines.push(`${icon(result.page.ok)} ${zh ? '页面' : 'Page'}：${result.page.status ?? noResponse}${statusExpectation}，${result.page.elapsedMs}ms，${zh ? `尝试 ${result.page.attempts} 次` : `${result.page.attempts} attempt(s)`}`);
+  const pageAttempts = zh ? `尝试 ${result.page.attempts} 次` : `${result.page.attempts} attempt(s)`;
+  lines.push(`${icon(result.page.ok)} ${zh ? '页面' : 'Page'}${colon}${result.page.status ?? noResponse}${statusExpectation}${comma}${result.page.elapsedMs}ms${comma}${pageAttempts}`);
 
-  if (result.page.finalUrl) lines.push(`   ${zh ? '最终地址' : 'Final URL'}：${result.page.finalUrl}`);
+  if (result.page.finalUrl) lines.push(`   ${zh ? '最终地址' : 'Final URL'}${colon}${result.page.finalUrl}`);
 
   if (result.page.expected) {
-    lines.push(`${icon(result.page.expectedOk)} ${zh ? '页面内容' : 'Page content'}：${result.page.expectedOk ? (zh ? '已找到' : 'found') : (zh ? '未找到' : 'not found')} “${result.page.expected}”`);
+    lines.push(`${icon(result.page.expectedOk)} ${zh ? '页面内容' : 'Page content'}${colon}${result.page.expectedOk ? (zh ? '已找到' : 'found') : (zh ? '未找到' : 'not found')} ${quote(result.page.expected)}`);
   }
 
   if (result.page.blockedByChallenge) {
-    lines.push(`❌ Cloudflare：${zh ? '疑似 Challenge / WAF 阻断' : 'likely Challenge / WAF block'} (${result.page.challengeMatches.join(', ')})`);
+    lines.push(`❌ Cloudflare${colon}${zh ? '疑似 Challenge / WAF 阻断' : 'likely Challenge / WAF block'} (${result.page.challengeMatches.join(', ')})`);
   } else if (result.page.cfRay) {
-    lines.push(`✅ Cloudflare：${zh ? '检测到 CF-Ray' : 'CF-Ray detected'} ${result.page.cfRay}`);
+    lines.push(`✅ Cloudflare${colon}${zh ? '检测到 CF-Ray' : 'CF-Ray detected'} ${result.page.cfRay}`);
   }
 
   if (result.tls.checked) {
     const days = result.tls.daysRemaining === null
       ? ''
       : (zh ? `，剩余约 ${result.tls.daysRemaining} 天` : `, about ${result.tls.daysRemaining} day(s) remaining`);
-    lines.push(`${icon(result.tls.ok)} TLS：${result.tls.authorized ? (zh ? '证书链校验通过' : 'certificate chain valid') : result.tls.authorizationError || (zh ? '校验失败' : 'validation failed')}${days}`);
+    lines.push(`${icon(result.tls.ok)} TLS${colon}${result.tls.authorized ? (zh ? '证书链校验通过' : 'certificate chain valid') : result.tls.authorizationError || (zh ? '校验失败' : 'validation failed')}${days}`);
   } else {
     lines.push(zh ? '➖ TLS：未检查（目标不是 HTTPS）' : '➖ TLS: not checked (target is not HTTPS)');
   }
 
   if (result.assets.checked) {
-    lines.push(`${icon(result.assets.ok)} ${zh ? '静态资源' : 'Static assets'}：${zh ? `检查 ${result.assets.count} 个同源 JS/CSS，失败 ${result.assets.failedCount} 个` : `checked ${result.assets.count} same-origin JS/CSS asset(s), ${result.assets.failedCount} failed`}`);
+    lines.push(`${icon(result.assets.ok)} ${zh ? '静态资源' : 'Static assets'}${colon}${zh ? `检查 ${result.assets.count} 个同源 JS/CSS，失败 ${result.assets.failedCount} 个` : `checked ${result.assets.count} same-origin JS/CSS asset(s), ${result.assets.failedCount} failed`}`);
     for (const asset of result.assets.failed.slice(0, 5)) {
       lines.push(`   - ${shortAsset(asset, lang)}`);
     }
@@ -129,33 +141,34 @@ function toTextReport(result, language) {
         : `   - ${result.assets.failed.length - 5} more failed asset(s) omitted from terminal output`);
     }
   } else {
-    lines.push(`➖ ${zh ? '静态资源' : 'Static assets'}：${zh ? '未检查' : 'not checked'}（${result.assets.reason || (zh ? '未启用' : 'disabled')}）`);
+    const reason = localizeDiagnostic(result.assets.reason || (zh ? '未启用静态资源检查' : 'Static asset checks disabled'), lang);
+    lines.push(`➖ ${zh ? '静态资源' : 'Static assets'}${colon}${zh ? '未检查' : 'not checked'} (${reason})`);
   }
 
   if (result.browser.checked) {
-    lines.push(`${icon(result.browser.ok)} ${zh ? '浏览器' : 'Browser'}：${result.browser.mainStatus ?? noResponse} · ${result.browser.title || (zh ? '无标题' : 'untitled')} · ${result.browser.profile || 'desktop'} ${result.browser.viewport?.width ?? '?'}×${result.browser.viewport?.height ?? '?'}`);
-    lines.push(`   ${zh ? '可见文本' : 'Visible text'}：${result.browser.textLength ?? 0} ${zh ? '字符' : 'characters'}`);
+    lines.push(`${icon(result.browser.ok)} ${zh ? '浏览器' : 'Browser'}${colon}${result.browser.mainStatus ?? noResponse} · ${result.browser.title || (zh ? '无标题' : 'untitled')} · ${result.browser.profile || 'desktop'} ${result.browser.viewport?.width ?? '?'}×${result.browser.viewport?.height ?? '?'}`);
+    lines.push(`   ${zh ? '可见文本' : 'Visible text'}${colon}${result.browser.textLength ?? 0} ${zh ? '字符' : 'characters'}`);
     if (result.browser.renderedExpect) {
-      lines.push(`   ${zh ? '渲染文本' : 'Rendered text'}：${result.browser.renderedExpectOk ? (zh ? '✅ 已找到' : '✅ found') : (zh ? '❌ 未找到' : '❌ not found')} “${result.browser.renderedExpect}”`);
+      lines.push(`   ${zh ? '渲染文本' : 'Rendered text'}${colon}${result.browser.renderedExpectOk ? (zh ? '✅ 已找到' : '✅ found') : (zh ? '❌ 未找到' : '❌ not found')} ${quote(result.browser.renderedExpect)}`);
     }
-    lines.push(`   ${zh ? 'JS 未捕获异常' : 'Uncaught JS errors'}：${result.browser.pageErrors.length}；Console error：${result.browser.consoleErrors.length}`);
-    lines.push(`   ${zh ? '关键同源请求失败' : 'Critical same-origin request failures'}：${result.browser.criticalRequestFailures.length}；${zh ? '关键同源 4xx/5xx' : 'Critical same-origin 4xx/5xx'}：${result.browser.criticalBadResponses.length}`);
+    lines.push(`   ${zh ? 'JS 未捕获异常' : 'Uncaught JS errors'}${colon}${result.browser.pageErrors.length}${semicolon}Console errors${colon}${result.browser.consoleErrors.length}`);
+    lines.push(`   ${zh ? '关键同源请求失败' : 'Critical same-origin request failures'}${colon}${result.browser.criticalRequestFailures.length}${semicolon}${zh ? '关键同源 4xx/5xx' : 'Critical same-origin 4xx/5xx'}${colon}${result.browser.criticalBadResponses.length}`);
 
     for (const item of result.browser.criticalRequestFailures.slice(0, 3)) lines.push(`   - ${browserIssueLine(item, lang)}`);
     for (const item of result.browser.criticalBadResponses.slice(0, 3)) lines.push(`   - ${browserIssueLine(item, lang)}`);
     for (const message of result.browser.pageErrors.slice(0, 3)) lines.push(`   - pageerror: ${message}`);
-    if (result.browser.screenshotPath) lines.push(`   ${zh ? '截图' : 'Screenshot'}：${result.browser.screenshotPath}`);
-    if (result.browser.tracePath) lines.push(`   Trace：${result.browser.tracePath}`);
+    if (result.browser.screenshotPath) lines.push(`   ${zh ? '截图' : 'Screenshot'}${colon}${result.browser.screenshotPath}`);
+    if (result.browser.tracePath) lines.push(`   Trace${colon}${result.browser.tracePath}`);
   } else {
     lines.push(zh ? '➖ 浏览器：未启用' : '➖ Browser: disabled');
   }
 
-  lines.push(`${result.auxiliary.robots.ok ? '✅' : '⚠️'} robots.txt：HTTP ${result.auxiliary.robots.status ?? noResponse}`);
-  lines.push(`${result.auxiliary.sitemap.ok ? '✅' : '⚠️'} sitemap.xml：HTTP ${result.auxiliary.sitemap.status ?? noResponse}`);
+  lines.push(`${result.auxiliary.robots.ok ? '✅' : '⚠️'} robots.txt${colon}HTTP ${result.auxiliary.robots.status ?? noResponse}`);
+  lines.push(`${result.auxiliary.sitemap.ok ? '✅' : '⚠️'} sitemap.xml${colon}HTTP ${result.auxiliary.sitemap.status ?? noResponse}`);
 
-  lines.push(`🛡️ ${zh ? '安全响应头' : 'Security headers'}：${result.page.security.score}/100`);
-  if (result.page.security.present.length) lines.push(`   ${zh ? '已有' : 'Present'}：${result.page.security.present.join(zh ? '、' : ', ')}`);
-  if (result.page.security.missing.length) lines.push(`   ${zh ? '缺少' : 'Missing'}：${result.page.security.missing.join(zh ? '、' : ', ')}`);
+  lines.push(`🛡️ ${zh ? '安全响应头' : 'Security headers'}${colon}${result.page.security.score}/100`);
+  if (result.page.security.present.length) lines.push(`   ${zh ? '已有' : 'Present'}${colon}${result.page.security.present.join(zh ? '、' : ', ')}`);
+  if (result.page.security.missing.length) lines.push(`   ${zh ? '缺少' : 'Missing'}${colon}${result.page.security.missing.join(zh ? '、' : ', ')}`);
 
   if (result.failures.length) {
     lines.push('');
@@ -187,7 +200,7 @@ export function toEnglishReport(result) {
 }
 
 export function toMarkdownSummary(result, options = {}) {
-  const lang = normalizeLanguage(options.language || 'zh-CN');
+  const lang = normalizeLanguage(options.language || 'en');
   const zh = lang === 'zh-CN';
   const noResponse = zh ? '无响应' : 'no response';
   const notChecked = zh ? '未检查' : 'not checked';
@@ -245,7 +258,7 @@ export function toMarkdownSummary(result, options = {}) {
   return [
     `## 🩺 ProdDoctor: ${result.ok ? (zh ? '✅ 生产环境通过' : '✅ production passed') : (zh ? '❌ 生产环境未通过' : '❌ production failed')}`,
     '',
-    `${zh ? '目标' : 'Target'}：\`${result.target}\``,
+    `${zh ? '目标：' : 'Target: '}\`${result.target}\``,
     '',
     zh ? '| 检查项 | 状态 | 详情 |' : '| Check | Status | Details |',
     '|---|---:|---|',
@@ -253,8 +266,8 @@ export function toMarkdownSummary(result, options = {}) {
     '',
     ...failedAssets,
     ...browserDetails,
-    ...(result.browser.screenshotPath ? [`${zh ? '浏览器截图' : 'Browser screenshot'}：\`${result.browser.screenshotPath}\``, ''] : []),
-    ...(result.browser.tracePath ? [`Playwright Trace：\`${result.browser.tracePath}\``, ''] : []),
+    ...(result.browser.screenshotPath ? [`${zh ? '浏览器截图：' : 'Browser screenshot: '}\`${result.browser.screenshotPath}\``, ''] : []),
+    ...(result.browser.tracePath ? [`${zh ? 'Playwright Trace：' : 'Playwright Trace: '}\`${result.browser.tracePath}\``, ''] : []),
     ...(result.failures.length ? [zh ? '### 阻断问题' : '### Blocking issues', ...result.failures.map(x => `- ${localizeDiagnostic(x, lang)}`), ''] : []),
     ...(result.warnings.length ? [zh ? '### 提示' : '### Warnings', ...result.warnings.map(x => `- ${localizeDiagnostic(x, lang)}`), ''] : [])
   ].join('\n');

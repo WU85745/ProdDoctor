@@ -36,14 +36,14 @@ jobs:
         uses: ./
         with:
           url: https://example.com
-          language: en
           retries: 1
           timeout: 15000
 
-      - name: Expected content and exact status
+      - name: Expected content and exact status in Chinese
         uses: ./
         with:
           url: https://example.com
+          language: zh-CN
           expect: Example Domain
           status: 200
           retries: 1

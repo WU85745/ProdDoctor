@@ -69,18 +69,19 @@ test('Chinese text report remains available', () => {
   assert.match(report, /阻断问题/);
 });
 
-test('Markdown summary supports English and Chinese', () => {
-  const english = toMarkdownSummary(sampleResult(), { language: 'en' });
+test('Markdown summary defaults to English and still supports Chinese', () => {
+  const english = toMarkdownSummary(sampleResult());
   const chinese = toMarkdownSummary(sampleResult(), { language: 'zh-CN' });
 
   assert.match(english, /Production page/);
   assert.match(english, /Blocking issues/);
+  assert.doesNotMatch(english, /生产页面|阻断问题/);
   assert.match(chinese, /生产页面/);
   assert.match(chinese, /阻断问题/);
 });
 
 test('HTML report defaults to English and can render Chinese', () => {
-  const english = toHtmlReport(sampleResult(), { language: 'en' });
+  const english = toHtmlReport(sampleResult());
   const chinese = toHtmlReport(sampleResult(), { language: 'zh-CN' });
 
   assert.match(english, /<html lang="en">/);
@@ -88,6 +89,20 @@ test('HTML report defaults to English and can render Chinese', () => {
   assert.match(english, /Likely blocked by Cloudflare Challenge \/ WAF/);
   assert.match(chinese, /<html lang="zh-CN">/);
   assert.match(chinese, /ProdDoctor 生产报告/);
+});
+
+test('English text report uses English punctuation for its own labels', () => {
+  const report = toEnglishReport(sampleResult());
+
+  assert.match(report, /Target: https:\/\/example\.com\//);
+  assert.match(report, /Result: ❌ FAIL/);
+  assert.doesNotMatch(report, /Target：|Result：|Page：|，|；/);
+});
+
+test('diagnostic localizer covers browser fallback and skipped asset reasons', () => {
+  assert.equal(localizeDiagnostic('浏览器：浏览器检查无法完成', 'en'), 'Browser: Browser check could not complete');
+  assert.equal(localizeDiagnostic('生产页面没有可分析的响应正文', 'en'), 'Production page has no response body to analyze');
+  assert.equal(localizeDiagnostic('页面 Content-Type 不是 HTML：application/json', 'en'), 'Page Content-Type is not HTML: application/json');
 });
 
 test('diagnostic localizer preserves unknown messages', () => {
