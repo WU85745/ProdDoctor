@@ -152,7 +152,7 @@ export function toHtmlReport(result, options = {}) {
     <div class="summary">
       <strong class="${result.ok ? 'ok-text' : 'bad-text'}">${result.ok ? 'PASS' : 'FAIL'}</strong>
       <div class="muted">ProdDoctor v${esc(result.version)}</div>
-      ${cause ? `<p><strong>${zh ? '可能原因' : 'Likely cause'}:</strong> ${esc(cause)}</p>` : ''}
+      ${cause ? `<p>${zh ? '可能原因' : 'Likely cause'}: ${esc(cause)}</p>` : ''}
     </div>
 
     <section>
