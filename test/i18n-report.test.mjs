@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { localizeDiagnostic, toChineseReport, toEnglishReport, toMarkdownSummary } from '../src/report.mjs';
+import { localizeDiagnostic, localizeResult, toChineseReport, toEnglishReport, toMarkdownSummary } from '../src/report.mjs';
 import { toHtmlReport } from '../src/html-report.mjs';
 
 function sampleResult() {
@@ -103,6 +103,20 @@ test('diagnostic localizer covers browser fallback and skipped asset reasons', (
   assert.equal(localizeDiagnostic('浏览器：浏览器检查无法完成', 'en'), 'Browser: Browser check could not complete');
   assert.equal(localizeDiagnostic('生产页面没有可分析的响应正文', 'en'), 'Production page has no response body to analyze');
   assert.equal(localizeDiagnostic('页面 Content-Type 不是 HTML：application/json', 'en'), 'Page Content-Type is not HTML: application/json');
+});
+
+test('JSON diagnostics default to English when localized', () => {
+  const localized = localizeResult(sampleResult());
+
+  assert.deepEqual(localized.failures, ['Likely blocked by Cloudflare Challenge / WAF']);
+  assert.deepEqual(localized.warnings, ['Missing common security headers: Content-Security-Policy']);
+});
+
+test('Chinese JSON diagnostics remain unchanged when requested', () => {
+  const original = sampleResult();
+  const localized = localizeResult(original, 'zh-CN');
+
+  assert.equal(localized, original);
 });
 
 test('diagnostic localizer preserves unknown messages', () => {
