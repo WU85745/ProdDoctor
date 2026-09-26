@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { localizeDiagnostic, localizeResult, toChineseReport, toEnglishReport, toMarkdownSummary } from '../src/report.mjs';
+import { likelyCause, localizeDiagnostic, localizeResult, toChineseReport, toEnglishReport, toMarkdownSummary } from '../src/report.mjs';
 import { toHtmlReport } from '../src/html-report.mjs';
 
 function sampleResult() {
@@ -121,4 +121,32 @@ test('Chinese JSON diagnostics remain unchanged when requested', () => {
 
 test('diagnostic localizer preserves unknown messages', () => {
   assert.equal(localizeDiagnostic('custom third-party warning', 'en'), 'custom third-party warning');
+});
+
+
+test('failure reports include one human-readable likely cause without claiming build status', () => {
+  const result = sampleResult();
+  const english = toEnglishReport(result);
+  const chinese = toChineseReport(result);
+  const markdown = toMarkdownSummary(result);
+  const html = toHtmlReport(result);
+
+  assert.equal(likelyCause(result), 'Cloudflare Challenge / WAF is blocking the real production request.');
+  assert.equal(likelyCause(result, 'zh-CN'), 'Cloudflare Challenge / WAF 正在阻断真实生产请求。');
+  assert.match(english, /Likely cause: Cloudflare Challenge \/ WAF is blocking the real production request\./);
+  assert.match(chinese, /可能原因：Cloudflare Challenge \/ WAF 正在阻断真实生产请求。/);
+  assert.match(markdown, /\*\*Likely cause:\*\* Cloudflare Challenge \/ WAF is blocking the real production request\./);
+  assert.match(html, /<p>Likely cause: Cloudflare Challenge \/ WAF is blocking the real production request\.<\/p>/);
+  assert.doesNotMatch(english, /build (passed|failed|healthy)/i);
+});
+
+test('successful reports do not invent a likely cause', () => {
+  const result = sampleResult();
+  result.ok = true;
+  result.page.ok = true;
+  result.page.blockedByChallenge = false;
+  result.failures = [];
+
+  assert.equal(likelyCause(result), null);
+  assert.doesNotMatch(toEnglishReport(result), /Likely cause:/);
 });

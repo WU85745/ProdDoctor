@@ -93,6 +93,74 @@ export function localizeResult(result, language = 'en') {
   };
 }
 
+export function likelyCause(result, language = 'en') {
+  if (!result || result.ok) return null;
+
+  const zh = normalizeLanguage(language) === 'zh-CN';
+  const page = result.page || {};
+
+  if (page.blockedByChallenge) {
+    return zh
+      ? 'Cloudflare Challenge / WAF 正在阻断真实生产请求。'
+      : 'Cloudflare Challenge / WAF is blocking the real production request.';
+  }
+
+  if (!result.dns?.ok && page.status == null) {
+    return zh
+      ? 'DNS 解析失败，ProdDoctor 无法正常到达生产域名。'
+      : 'DNS resolution failed, so ProdDoctor could not reach the production hostname normally.';
+  }
+
+  if (result.tls?.checked && !result.tls.ok) {
+    return zh
+      ? 'TLS 证书校验失败，HTTPS 连接无法被正常验证。'
+      : 'TLS certificate validation failed, so the HTTPS connection could not be verified.';
+  }
+
+  if (!page.ok && page.status != null && page.statusOk === false) {
+    if (page.expectedStatus != null) {
+      return zh
+        ? `生产端点返回 HTTP ${page.status}，而预期是 ${page.expectedStatus}。`
+        : `The production endpoint returned HTTP ${page.status}, but ${page.expectedStatus} was expected.`;
+    }
+    return zh
+      ? `生产端点返回了异常的 HTTP ${page.status}。`
+      : `The production endpoint returned an unexpected HTTP ${page.status}.`;
+  }
+
+  if (!page.ok && page.expected && !page.expectedOk) {
+    return zh
+      ? '生产页面可以响应，但返回的内容不是预期版本或页面。'
+      : 'The production page responded, but its content did not match the expected page or version.';
+  }
+
+  if (!page.ok && page.error) {
+    return zh
+      ? '生产请求在获得有效响应前失败。'
+      : 'The production request failed before a valid response was received.';
+  }
+
+  if (result.assets?.checked && !result.assets.ok) {
+    return zh
+      ? '生产页面已返回，但至少一个关键同源 JS/CSS 资源不可用或内容异常。'
+      : 'The production page responded, but at least one same-origin JS/CSS asset is unavailable or invalid.';
+  }
+
+  if (result.browser?.checked && !result.browser.ok) {
+    return zh
+      ? '服务器响应已到达浏览器，但真实 Chromium 运行时检查失败。'
+      : 'The server response reached the browser, but the real Chromium runtime check failed.';
+  }
+
+  if (!result.dns?.ok) {
+    return zh
+      ? 'ProdDoctor 的 DNS 检查失败。'
+      : 'ProdDoctor\'s DNS check failed.';
+  }
+
+  return null;
+}
+
 function shortAsset(asset, language) {
   const lang = normalizeLanguage(language);
   const suffix = asset.htmlFallback
@@ -124,6 +192,8 @@ function toTextReport(result, language) {
   lines.push(zh ? '🩺 ProdDoctor 生产环境体检' : '🩺 ProdDoctor production check');
   lines.push(`${zh ? '目标' : 'Target'}${colon}${result.target}`);
   lines.push(`${zh ? '结果' : 'Result'}${colon}${result.ok ? (zh ? '✅ 通过' : '✅ PASS') : (zh ? '❌ 未通过' : '❌ FAIL')}`);
+  const cause = likelyCause(result, lang);
+  if (cause) lines.push(`${zh ? '可能原因' : 'Likely cause'}${colon}${cause}`);
   lines.push('');
 
   const dnsFail = zh ? '失败' : 'failed';
@@ -287,6 +357,7 @@ export function toMarkdownSummary(result, options = {}) {
     '',
     `${zh ? '目标：' : 'Target: '}\`${result.target}\``,
     '',
+    ...(likelyCause(result, lang) ? [`**${zh ? '可能原因' : 'Likely cause'}:** ${likelyCause(result, lang)}`, ''] : []),
     zh ? '| 检查项 | 状态 | 详情 |' : '| Check | Status | Details |',
     '|---|---:|---|',
     ...rows.map(([name, status, detail]) => `| ${name} | ${status} | ${String(detail).replace(/\|/g, '\\\|')} |`),
