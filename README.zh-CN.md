@@ -11,29 +11,23 @@
 ![License](https://img.shields.io/badge/license-MIT-16a34a)
 
 <p align="center">
-  <img src=".github/assets/proddoctor-hero.svg" alt="ProdDoctor - post-deploy production validation" width="100%">
+  <img src=".github/assets/proddoctor-hero.svg" alt="ProdDoctor - 部署后真实生产环境验证" width="100%">
 </p>
 
-**部署后直接验证真实生产环境，并帮你缩小故障范围。**
+## 部署成功了，但真实生产环境真的能用吗？
 
-ProdDoctor 在部署完成后直接检查用户真正访问到的生产环境。它不会只停在“Build 成功”或“Deploy 命令成功”，而是继续验证 DNS、HTTP、TLS、真实页面内容、同源资源、Cloudflare/WAF，以及可选的 Chromium 运行时。
+```text
+CI                 ✅
+部署命令             ✅
+平台地址             ✅
+真实生产域名          ❌
+```
 
-当检查失败时，ProdDoctor 不只是给出一个红叉。它会把问题缩小到更可能出错的层级，并保留失败请求、截图、Playwright Trace、HTML / JSON 报告等调试证据。
+**ProdDoctor 检查部署后用户真正访问到的网站，并帮助你缩小故障所在层。**
 
-> **Deploy 绿了，不代表生产环境正常。ProdDoctor 会继续检查用户真正访问到的那一层，并告诉你大概率坏在哪。**
+它会沿着真实生产路径检查 DNS、HTTP、TLS、同源静态资源、Cloudflare/WAF，以及可选的 Chromium 浏览器运行时。失败时还能保留截图、Playwright Trace、HTML/JSON 报告，而不是只给你一个红叉。
 
-## 版本与稳定性
-
-当前对外稳定版本为 **v1.4.1**。用户示例默认引用具体版本 `@v1.4.1`；如果 Releases / tag 页面尚未出现该版本，请先不要把这个引用用于实际流水线。
-
-- 功能仍可能较快增加，升级前请先查看 [CHANGELOG.md](CHANGELOG.md)。
-- 一般试用或首次接入，使用 `lucaswenbo/ProdDoctor@v1.4.1`。
-- 生产门禁建议把具体 tag 换成该 tag 对应的**完整 commit SHA**，避免任何引用漂移。
-- `@main` 跟踪最新开发代码，行为可能随时变化，不建议用于生产门禁。
-- 具体版本 tag（例如 `v1.4.1`）发布后禁止移动；补丁修复应发布新的 patch 版本，例如 `v1.4.2`。
-- 可维护浮动 major tag（例如 `v1`）指向当前 1.x 最新发布，但它会移动，不适合要求严格可复现的生产流水线。
-
-## 30 秒接入
+### 30 秒接入
 
 ```yaml
 - uses: lucaswenbo/ProdDoctor@v1.4.1
@@ -42,11 +36,48 @@ ProdDoctor 在部署完成后直接检查用户真正访问到的生产环境。
     expect: My Website
 ```
 
-不需要 Cloudflare API Token，也不需要修改你的部署平台配置。
+**不需要 Cloudflare API Token，也不需要改部署平台配置。**
+
+### 一个典型的有用失败
+
+<p align="center">
+  <img src=".github/assets/proddoctor-demo.svg" alt="CI 通过但真实生产域名失败时，ProdDoctor 定位故障层" width="100%">
+</p>
+
+```text
+构建 / 部署           ✅ 通过
+平台地址              ✅ 可访问
+真实生产域名           ❌ HTTP 403
+DNS                  ✅ 正常
+TLS                  ✅ 正常
+可能故障层             ⚠️ Cloudflare Challenge / WAF
+证据                  📎 截图 + Trace + 报告
+```
+
+ProdDoctor 解决的是 **“部署命令成功”** 和 **“真实用户访问的网站确实正常”** 之间的空档。它还可以发现 HTTP 200 但页面版本错误、同源 JS/CSS 损坏、只在浏览器里出现的 JavaScript 异常，以及渲染文本不匹配。
+
+## 版本与稳定性
+
+当前对外稳定版本为 **v1.4.1**。
+
+- 一般试用或首次接入，使用 `lucaswenbo/ProdDoctor@v1.4.1`。
+- 生产门禁建议固定到对应 Release 的 **完整 commit SHA**。
+- `@main` 跟随开发分支变化，不建议作为严格生产门禁。
+- 具体版本 tag（例如 `v1.4.1`）发布后禁止移动；补丁修复应发布新的 patch 版本，例如 `v1.4.2`。
+- 浮动主版本 tag（例如 `v1`）可以跟随最新 1.x 稳定版，但它会移动，不适合要求严格可复现的环境。
+- 升级前建议查看 [CHANGELOG.md](CHANGELOG.md)。
+
+### 输出语言
+
+CLI 人类可读输出、GitHub Actions Job Summary 和 HTML 报告支持：
+
+- GitHub Actions：`language: en` 切换英文
+- CLI：`--lang en` 切换英文
+- 默认继续使用 `zh-CN`，保证已有工作流兼容
+
+JSON 字段名和机器可读结构保持不变。
 
 ## 如何锁定版本
-
-三种常见写法的用途不同：
 
 | 引用方式 | 适合场景 | 稳定性 |
 |---|---|---|
@@ -62,22 +93,13 @@ ProdDoctor 在部署完成后直接检查用户真正访问到的生产环境。
     url: https://example.com
 ```
 
-不要把 `<commit-sha>` 原样复制。发布 `v1.4.1` 后，可以从 GitHub **Releases / v1.4.1 tag 页面**进入该版本对应的 commit，再复制完整 SHA；本地已拉取 tag 时也可以运行：
+不要把 `<commit-sha>` 原样复制。发布 `v1.4.1` 后，可以从 GitHub **Releases / v1.4.1 tag 页面**进入对应 commit，复制完整 SHA；本地也可以运行：
 
 ```bash
 git rev-list -n 1 v1.4.1
 ```
 
-得到该 tag 对应的完整 commit SHA 后，再替换 Workflow 里的占位符。
-
-### 一个典型故障
-
-<p align="center">
-  <img src=".github/assets/proddoctor-demo.svg" alt="ProdDoctor detects a real production-domain failure after CI passes" width="100%">
-</p>
-
-上面的场景里，构建、部署和平台地址都正常，但真实生产域名返回 Cloudflare 403。ProdDoctor 不会只给出一个笼统的失败：它会显示 DNS 正常、HTTP 403，并把 Cloudflare Challenge / WAF 标为更可能的故障层，从而把排查范围缩小到边缘 / 安全层，同时保留报告证据供后续调试。
-
+然后把占位符替换成真实 SHA。
 ## 它会检查什么
 
 - DNS 是否能够解析
