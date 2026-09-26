@@ -2,6 +2,17 @@
 
 所有值得记录的变更都集中在这里。格式遵循 Keep a Changelog 的组织方式，版本号遵循 SemVer。
 
+## [2.0.0](https://github.com/lucaswenbo/ProdDoctor/compare/v1.5.0...v2.0.0) (2026-09-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* default human-readable output language is now English.
+
+### Features
+
+* make English the default output language ([5709c0e](https://github.com/lucaswenbo/ProdDoctor/commit/5709c0e9cb84276d95fdbe04dbd81c8fc36e5b2a))
+
 ## [1.5.0](https://github.com/lucaswenbo/ProdDoctor/compare/v1.4.1...v1.5.0) (2026-09-26)
 
 
