@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { localizeDiagnostic, normalizeLanguage } from './report.mjs';
 
 function esc(value) {
   return String(value ?? '')
@@ -23,8 +24,8 @@ function row(label, status, detail, warning = false) {
     </tr>`;
 }
 
-function list(items) {
-  if (!items?.length) return '<p class="muted">无</p>';
+function list(items, emptyLabel) {
+  if (!items?.length) return `<p class="muted">${esc(emptyLabel)}</p>`;
   return `<ul>${items.map((item) => `<li>${esc(item)}</li>`).join('')}</ul>`;
 }
 
@@ -38,33 +39,37 @@ function relativeEvidenceLink(filePath, reportPath) {
 }
 
 export function toHtmlReport(result, options = {}) {
+  const language = normalizeLanguage(options.language || 'zh-CN');
+  const zh = language === 'zh-CN';
   const browser = result.browser;
   const screenshotName = relativeEvidenceLink(browser?.screenshotPath, options.reportPath);
   const traceName = relativeEvidenceLink(browser?.tracePath, options.reportPath);
+  const noResponse = zh ? '无响应' : 'no response';
+  const empty = zh ? '无' : 'None';
 
   const rows = [
     row('DNS', result.dns.ok, result.dns.ok
       ? result.dns.addresses.map((item) => item.address).join(', ')
-      : result.dns.error || '失败'),
-    row('生产页面', result.page.ok, `HTTP ${result.page.status ?? '无响应'} · ${result.page.elapsedMs}ms`),
-    row('Cloudflare/WAF', !result.page.blockedByChallenge, result.page.blockedByChallenge ? '检测到疑似挑战页' : '未发现典型阻断'),
+      : result.dns.error || (zh ? '失败' : 'failed')),
+    row(zh ? '生产页面' : 'Production page', result.page.ok, `HTTP ${result.page.status ?? noResponse} · ${result.page.elapsedMs}ms`),
+    row('Cloudflare/WAF', !result.page.blockedByChallenge, result.page.blockedByChallenge ? (zh ? '检测到疑似挑战页' : 'Likely challenge/WAF block detected') : (zh ? '未发现典型阻断' : 'No typical block detected')),
     row('TLS', !result.tls.checked || result.tls.ok, result.tls.checked
-      ? `${result.tls.authorized ? '证书链正常' : result.tls.authorizationError || '异常'} · ${result.tls.daysRemaining ?? '?'} 天`
-      : '未检查'),
-    row('同源 JS/CSS', !result.assets.checked || result.assets.ok, result.assets.checked
-      ? `${result.assets.count} 个，失败 ${result.assets.failedCount} 个`
-      : result.assets.reason || '未启用'),
-    row('浏览器', !browser.checked || browser.ok, browser.checked
-      ? `${browser.profile} · HTTP ${browser.mainStatus ?? '无响应'} · ${browser.viewport?.width ?? '?'}×${browser.viewport?.height ?? '?'}`
-      : '未启用'),
-    row('robots.txt', result.auxiliary.robots.ok, `HTTP ${result.auxiliary.robots.status ?? '无响应'}`, !result.auxiliary.robots.ok),
-    row('sitemap.xml', result.auxiliary.sitemap.ok, `HTTP ${result.auxiliary.sitemap.status ?? '无响应'}`, !result.auxiliary.sitemap.ok)
+      ? `${result.tls.authorized ? (zh ? '证书链正常' : 'Certificate chain valid') : result.tls.authorizationError || (zh ? '异常' : 'invalid')} · ${result.tls.daysRemaining ?? '?'} ${zh ? '天' : 'day(s)'}`
+      : (zh ? '未检查' : 'Not checked')),
+    row(zh ? '同源 JS/CSS' : 'Same-origin JS/CSS', !result.assets.checked || result.assets.ok, result.assets.checked
+      ? (zh ? `${result.assets.count} 个，失败 ${result.assets.failedCount} 个` : `${result.assets.count} checked, ${result.assets.failedCount} failed`)
+      : result.assets.reason || (zh ? '未启用' : 'Disabled')),
+    row(zh ? '浏览器' : 'Browser', !browser.checked || browser.ok, browser.checked
+      ? `${browser.profile} · HTTP ${browser.mainStatus ?? noResponse} · ${browser.viewport?.width ?? '?'}×${browser.viewport?.height ?? '?'}`
+      : (zh ? '未启用' : 'Disabled')),
+    row('robots.txt', result.auxiliary.robots.ok, `HTTP ${result.auxiliary.robots.status ?? noResponse}`, !result.auxiliary.robots.ok),
+    row('sitemap.xml', result.auxiliary.sitemap.ok, `HTTP ${result.auxiliary.sitemap.status ?? noResponse}`, !result.auxiliary.sitemap.ok)
   ].join('');
 
   const browserEvidence = browser.checked
     ? `
       <section>
-        <h2>浏览器证据</h2>
+        <h2>${zh ? '浏览器证据' : 'Browser evidence'}</h2>
         <div class="grid">
           <div class="card"><strong>Profile</strong><span>${esc(browser.profile)}</span></div>
           <div class="card"><strong>Viewport</strong><span>${esc(`${browser.viewport?.width ?? '?'}×${browser.viewport?.height ?? '?'}`)}</span></div>
@@ -75,7 +80,7 @@ export function toHtmlReport(result, options = {}) {
         </div>
 
         ${screenshotName ? `
-          <h3>页面截图</h3>
+          <h3>${zh ? '页面截图' : 'Page screenshot'}</h3>
           <p><a href="./${esc(screenshotName)}">${esc(screenshotName)}</a></p>
           <img class="screenshot" src="./${esc(screenshotName)}" alt="ProdDoctor browser screenshot">
         ` : ''}
@@ -85,27 +90,30 @@ export function toHtmlReport(result, options = {}) {
           <p><a href="./${esc(traceName)}">${esc(traceName)}</a></p>
         ` : ''}
 
-        <h3>未捕获 JavaScript 异常</h3>
-        ${list(browser.pageErrors)}
+        <h3>${zh ? '未捕获 JavaScript 异常' : 'Uncaught JavaScript errors'}</h3>
+        ${list(browser.pageErrors, empty)}
 
-        <h3>Console error</h3>
-        ${list(browser.consoleErrors)}
+        <h3>Console errors</h3>
+        ${list(browser.consoleErrors, empty)}
 
-        <h3>关键同源请求失败</h3>
-        ${list(browser.criticalRequestFailures.map((item) => `${item.resourceType}: ${item.url} · ${item.errorText}`))}
+        <h3>${zh ? '关键同源请求失败' : 'Critical same-origin request failures'}</h3>
+        ${list(browser.criticalRequestFailures.map((item) => `${item.resourceType}: ${item.url} · ${item.errorText}`), empty)}
 
-        <h3>关键同源 4xx/5xx</h3>
-        ${list(browser.criticalBadResponses.map((item) => `HTTP ${item.status}: ${item.resourceType} ${item.url}`))}
+        <h3>${zh ? '关键同源 4xx/5xx' : 'Critical same-origin 4xx/5xx'}</h3>
+        ${list(browser.criticalBadResponses.map((item) => `HTTP ${item.status}: ${item.resourceType} ${item.url}`), empty)}
       </section>
     `
     : '';
 
+  const localizedFailures = result.failures.map((item) => localizeDiagnostic(item, language));
+  const localizedWarnings = result.warnings.map((item) => localizeDiagnostic(item, language));
+
   return `<!doctype html>
-<html lang="zh-CN">
+<html lang="${zh ? 'zh-CN' : 'en'}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>ProdDoctor Report</title>
+  <title>${zh ? 'ProdDoctor 生产报告' : 'ProdDoctor Production Report'}</title>
   <style>
     :root { color-scheme: light dark; }
     body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0b0d10; color: #f4f6f8; }
@@ -137,7 +145,7 @@ export function toHtmlReport(result, options = {}) {
 </head>
 <body>
   <main>
-    <h1>ProdDoctor Production Report</h1>
+    <h1>${zh ? 'ProdDoctor 生产报告' : 'ProdDoctor Production Report'}</h1>
     <p class="subtitle">${esc(result.target)} · ${esc(result.checkedAt)}</p>
 
     <div class="summary">
@@ -146,9 +154,9 @@ export function toHtmlReport(result, options = {}) {
     </div>
 
     <section>
-      <h2>检查结果</h2>
+      <h2>${zh ? '检查结果' : 'Check results'}</h2>
       <table>
-        <thead><tr><th>检查项</th><th>状态</th><th>详情</th></tr></thead>
+        <thead><tr><th>${zh ? '检查项' : 'Check'}</th><th>${zh ? '状态' : 'Status'}</th><th>${zh ? '详情' : 'Details'}</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </section>
@@ -156,13 +164,13 @@ export function toHtmlReport(result, options = {}) {
     ${browserEvidence}
 
     <section>
-      <h2>阻断问题</h2>
-      ${list(result.failures)}
+      <h2>${zh ? '阻断问题' : 'Blocking issues'}</h2>
+      ${list(localizedFailures, empty)}
     </section>
 
     <section>
-      <h2>提示</h2>
-      ${list(result.warnings)}
+      <h2>${zh ? '提示' : 'Warnings'}</h2>
+      ${list(localizedWarnings, empty)}
     </section>
   </main>
 </body>

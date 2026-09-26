@@ -9,6 +9,10 @@ inputs:
   url:
     description: 'Real production URL to validate'
     required: true
+  language:
+    description: 'Human-readable output language: en or zh-CN'
+    required: false
+    default: 'zh-CN'
   expect:
     description: 'Text that must appear in the raw HTML; leave empty to disable'
     required: false
@@ -98,6 +102,7 @@ runs:
     - name: Validate ProdDoctor inputs
       shell: bash
       env:
+        PROD_DOCTOR_LANGUAGE: ${{ inputs.language }}
         PROD_DOCTOR_CHECK_ASSETS: ${{ inputs.check_assets }}
         PROD_DOCTOR_BROWSER: ${{ inputs.browser }}
         PROD_DOCTOR_BROWSER_FAIL_CONSOLE: ${{ inputs.browser_fail_console }}
@@ -107,11 +112,19 @@ runs:
         PROD_DOCTOR_BROWSER_PROFILE: ${{ inputs.browser_profile }}
         PROD_DOCTOR_BROWSER_TRACE: ${{ inputs.browser_trace }}
       run: |
+        case "$PROD_DOCTOR_LANGUAGE" in
+          en|zh-CN) ;;
+          *)
+            echo "language accepts only en or zh-CN"
+            exit 2
+            ;;
+        esac
+
         for value in           "$PROD_DOCTOR_CHECK_ASSETS"           "$PROD_DOCTOR_BROWSER"           "$PROD_DOCTOR_BROWSER_FAIL_CONSOLE"           "$PROD_DOCTOR_UPLOAD_SCREENSHOT"           "$PROD_DOCTOR_UPLOAD_REPORT"; do
           case "$value" in
             true|false) ;;
             *)
-              echo "布尔参数只接受 true 或 false"
+              echo "Boolean inputs accept only true or false"
               exit 2
               ;;
           esac
@@ -120,7 +133,7 @@ runs:
         case "$PROD_DOCTOR_BROWSER_PROFILE" in
           desktop|mobile) ;;
           *)
-            echo "browser_profile 只接受 desktop 或 mobile"
+            echo "browser_profile accepts only desktop or mobile"
             exit 2
             ;;
         esac
@@ -128,13 +141,13 @@ runs:
         case "$PROD_DOCTOR_BROWSER_TRACE" in
           off|on-failure|always) ;;
           *)
-            echo "browser_trace 只接受 off、on-failure 或 always"
+            echo "browser_trace accepts only off, on-failure, or always"
             exit 2
             ;;
         esac
 
         if [ "$PROD_DOCTOR_BROWSER" != "true" ] && [ -n "$PROD_DOCTOR_BROWSER_EXPECT" ]; then
-          echo "browser_expect 需要 browser: true"
+          echo "browser_expect requires browser: true"
           exit 2
         fi
 
@@ -168,6 +181,7 @@ runs:
       shell: bash
       env:
         PROD_DOCTOR_URL: ${{ inputs.url }}
+        PROD_DOCTOR_LANGUAGE: ${{ inputs.language }}
         PROD_DOCTOR_EXPECT: ${{ inputs.expect }}
         PROD_DOCTOR_STATUS: ${{ inputs.status }}
         PROD_DOCTOR_RETRIES: ${{ inputs.retries }}
@@ -189,6 +203,7 @@ runs:
       run: |
         args=(
           "$PROD_DOCTOR_URL"
+          --lang "$PROD_DOCTOR_LANGUAGE"
           --retries "$PROD_DOCTOR_RETRIES"
           --timeout "$PROD_DOCTOR_TIMEOUT"
           --max-body-bytes "$PROD_DOCTOR_MAX_BODY_BYTES"

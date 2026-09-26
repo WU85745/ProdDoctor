@@ -14,24 +14,20 @@
   <img src=".github/assets/proddoctor-hero.svg" alt="ProdDoctor - post-deploy production validation" width="100%">
 </p>
 
-**部署后直接验证真实生产环境，并帮你缩小故障范围。**
+**部署成功，不等于用户真的能正常打开生产环境。**
 
-ProdDoctor 在部署完成后直接检查用户真正访问到的生产环境。它不会只停在“Build 成功”或“Deploy 命令成功”，而是继续验证 DNS、HTTP、TLS、真实页面内容、同源资源、Cloudflare/WAF，以及可选的 Chromium 运行时。
+```text
+CI / Build          ✅
+Deploy              ✅
+平台地址             ✅
+真实生产域名          ❌
+```
 
-当检查失败时，ProdDoctor 不只是给出一个红叉。它会把问题缩小到更可能出错的层级，并保留失败请求、截图、Playwright Trace、HTML / JSON 报告等调试证据。
+ProdDoctor 会在部署之后继续检查**用户真正访问到的那条生产链路**，并帮你把问题缩小到更可能出错的层。
 
-> **Deploy 绿了，不代表生产环境正常。ProdDoctor 会继续检查用户真正访问到的那一层，并告诉你大概率坏在哪。**
+它会检查 DNS、HTTP、TLS、页面内容、同源资源、Cloudflare/WAF，以及可选的真实 Chromium 运行时；失败时还能保留请求信息、截图、Playwright Trace 和 HTML/JSON 报告。
 
-## 版本与稳定性
-
-当前对外稳定版本为 **v1.4.1**。用户示例默认引用具体版本 `@v1.4.1`；如果 Releases / tag 页面尚未出现该版本，请先不要把这个引用用于实际流水线。
-
-- 功能仍可能较快增加，升级前请先查看 [CHANGELOG.md](CHANGELOG.md)。
-- 一般试用或首次接入，使用 `lucaswenbo/ProdDoctor@v1.4.1`。
-- 生产门禁建议把具体 tag 换成该 tag 对应的**完整 commit SHA**，避免任何引用漂移。
-- `@main` 跟踪最新开发代码，行为可能随时变化，不建议用于生产门禁。
-- 具体版本 tag（例如 `v1.4.1`）发布后禁止移动；补丁修复应发布新的 patch 版本，例如 `v1.4.2`。
-- 可维护浮动 major tag（例如 `v1`）指向当前 1.x 最新发布，但它会移动，不适合要求严格可复现的生产流水线。
+> **CI 绿了，只能说明流水线跑完了。ProdDoctor 检查的是生产环境到底能不能真的用。**
 
 ## 30 秒接入
 
@@ -40,35 +36,12 @@ ProdDoctor 在部署完成后直接检查用户真正访问到的生产环境。
   with:
     url: https://example.com
     expect: My Website
+    language: zh-CN
 ```
+
+为兼容旧版本，人类可读输出默认仍为中文；英文用户可以设置 `language: en`。
 
 不需要 Cloudflare API Token，也不需要修改你的部署平台配置。
-
-## 如何锁定版本
-
-三种常见写法的用途不同：
-
-| 引用方式 | 适合场景 | 稳定性 |
-|---|---|---|
-| `lucaswenbo/ProdDoctor@main` | 开发、试用、验证最新代码 | 会随 main 变化，不建议用于生产门禁 |
-| `lucaswenbo/ProdDoctor@v1.4.1` | 推荐入门和一般项目接入 | 具体版本 tag，按项目约定发布后不移动 |
-| `lucaswenbo/ProdDoctor@<commit-sha>` | 生产流水线、严格可复现环境 | 最稳定，精确锁定到一个提交 |
-
-生产环境建议使用：
-
-```yaml
-- uses: lucaswenbo/ProdDoctor@<commit-sha>
-  with:
-    url: https://example.com
-```
-
-不要把 `<commit-sha>` 原样复制。发布 `v1.4.1` 后，可以从 GitHub **Releases / v1.4.1 tag 页面**进入该版本对应的 commit，再复制完整 SHA；本地已拉取 tag 时也可以运行：
-
-```bash
-git rev-list -n 1 v1.4.1
-```
-
-得到该 tag 对应的完整 commit SHA 后，再替换 Workflow 里的占位符。
 
 ### 一个典型故障
 
@@ -77,6 +50,18 @@ git rev-list -n 1 v1.4.1
 </p>
 
 上面的场景里，构建、部署和平台地址都正常，但真实生产域名返回 Cloudflare 403。ProdDoctor 不会只给出一个笼统的失败：它会显示 DNS 正常、HTTP 403，并把 Cloudflare Challenge / WAF 标为更可能的故障层，从而把排查范围缩小到边缘 / 安全层，同时保留报告证据供后续调试。
+
+## 它和普通“探活”有什么区别？
+
+普通健康检查往往只能告诉你“这个 URL 返回了 `200`”。ProdDoctor 更针对那些**部署看起来成功，但真实生产环境仍然坏了**的情况：
+
+- 自定义域名命中了错误的 Route / Worker
+- Cloudflare/WAF 在真实生产路径上把请求拦了
+- HTML 是 `200`，但 JS/CSS 资源已经坏掉
+- 服务端响应正常，但 Chromium 执行后白屏或抛运行时错误
+- 状态码成功，但用户拿到的是错误版本页面
+
+它的目标不只是给你一个红灯，而是尽量留下足够证据，让下一步该查哪里更清楚。
 
 ## 它会检查什么
 
@@ -142,6 +127,7 @@ jobs:
       - uses: lucaswenbo/ProdDoctor@v1.4.1
         with:
           url: https://example.com
+          language: zh-CN
 ```
 
 把：
@@ -493,6 +479,44 @@ Playwright + Chromium
 
 ---
 
+# 版本与稳定性
+
+当前对外稳定版本为 **v1.4.1**。用户示例默认引用具体版本 `@v1.4.1`；如果 Releases / tag 页面尚未出现该版本，请先不要把这个引用用于实际流水线。
+
+- 功能仍可能较快增加，升级前请先查看 [CHANGELOG.md](CHANGELOG.md)。
+- 一般试用或首次接入，使用 `lucaswenbo/ProdDoctor@v1.4.1`。
+- 生产门禁建议把具体 tag 换成该 tag 对应的**完整 commit SHA**，避免任何引用漂移。
+- `@main` 跟踪最新开发代码，行为可能随时变化，不建议用于生产门禁。
+- 具体版本 tag（例如 `v1.4.1`）发布后禁止移动；补丁修复应发布新的 patch 版本，例如 `v1.4.2`。
+- 可维护浮动 major tag（例如 `v1`）指向当前 1.x 最新发布，但它会移动，不适合要求严格可复现的生产流水线。
+
+## 如何锁定版本
+
+三种常见写法的用途不同：
+
+| 引用方式 | 适合场景 | 稳定性 |
+|---|---|---|
+| `lucaswenbo/ProdDoctor@main` | 开发、试用、验证最新代码 | 会随 main 变化，不建议用于生产门禁 |
+| `lucaswenbo/ProdDoctor@v1.4.1` | 推荐入门和一般项目接入 | 具体版本 tag，按项目约定发布后不移动 |
+| `lucaswenbo/ProdDoctor@<commit-sha>` | 生产流水线、严格可复现环境 | 最稳定，精确锁定到一个提交 |
+
+生产环境建议使用：
+
+```yaml
+- uses: lucaswenbo/ProdDoctor@<commit-sha>
+  with:
+    url: https://example.com
+```
+
+不要把 `<commit-sha>` 原样复制。发布 `v1.4.1` 后，可以从 GitHub **Releases / v1.4.1 tag 页面**进入该版本对应的 commit，再复制完整 SHA；本地已拉取 tag 时也可以运行：
+
+```bash
+git rev-list -n 1 v1.4.1
+```
+
+得到该 tag 对应的完整 commit SHA 后，再替换 Workflow 里的占位符。
+
+
 # 兼容性约定
 
 ProdDoctor 按 SemVer 管理对外行为，并尽量让已有 Workflow 在升级后继续按原意工作：
@@ -510,6 +534,7 @@ ProdDoctor 按 SemVer 管理对外行为，并尽量让已有 Workflow 在升级
 | 参数 | 是否必须 | 默认值 | 作用 |
 |---|---|---|---|
 | `url` | 是 | 无 | 要检查的正式 URL |
+| `language` | 否 | `zh-CN` | 人类可读输出语言：`en` 或 `zh-CN` |
 | `expect` | 否 | 空 | 原始 HTML 必须包含的文本 |
 | `status` | 否 | 空 | 最终 HTTP 状态必须精确匹配 |
 | `retries` | 否 | GitHub Action：`2`；CLI：`1` | 失败后额外重试次数 |
@@ -550,7 +575,7 @@ retries: 2
 
 # 方法二：在电脑上直接运行
 
-默认 HTTP 模式没有第三方 npm 运行时依赖，因此不需要先执行 `npm install`。浏览器模式需要 Playwright；在 GitHub Action 中会自动安装，本地使用时需要手动安装。
+默认 HTTP 模式没有第三方 npm 运行时依赖，因此不需要先执行 `npm install`。浏览器模式需要 Playwright；在 GitHub Action 中会自动安装，本地使用时需要手动安装。CLI 默认仍输出中文；需要英文时加 `--lang en`。
 
 ## 第 1 步：确认 Node.js 版本
 
