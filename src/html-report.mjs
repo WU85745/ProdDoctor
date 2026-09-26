@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { toEnglishText } from './report.mjs';
 
 function esc(value) {
   return String(value ?? '')
@@ -100,7 +101,7 @@ export function toHtmlReport(result, options = {}) {
     `
     : '';
 
-  return `<!doctype html>
+  const html = `<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
@@ -167,4 +168,6 @@ export function toHtmlReport(result, options = {}) {
   </main>
 </body>
 </html>`;
+
+  return options.language === 'en' ? toEnglishText(html).replace('<html lang="zh-CN">', '<html lang="en">') : html;
 }
