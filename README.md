@@ -14,24 +14,20 @@
   <img src=".github/assets/proddoctor-hero.svg" alt="ProdDoctor - post-deploy production validation" width="100%">
 </p>
 
-**Post-deploy production validation that helps show you where production broke.**
+**Your deploy passed. But does production actually work?**
 
-ProdDoctor checks the environment users actually reach after deployment. It does not stop at “Build passed” or “Deploy command succeeded”. It validates the real production path across DNS, HTTP, TLS, page content, same-origin assets, Cloudflare/WAF behavior, and optional Chromium runtime checks.
+```text
+CI / build          ✅
+Deploy command      ✅
+Platform URL        ✅
+Real production     ❌
+```
 
-When something fails, ProdDoctor does more than return a red check. It narrows the failure to the likely layer and preserves debugging evidence such as failed requests, screenshots, Playwright traces, and HTML/JSON reports.
+ProdDoctor checks the site your users actually reach after deployment, then helps narrow down **where production broke**.
 
-> **Your deploy passed. ProdDoctor checks whether production actually works and helps show you where it broke.**
+It validates DNS, HTTP, TLS, expected page content, same-origin assets, Cloudflare/WAF behavior, and optional real Chromium runtime behavior. When something fails, it can preserve evidence such as failed requests, screenshots, Playwright traces, and HTML/JSON reports.
 
-## Version and stability
-
-The current public stable release is **v1.4.1**.
-
-- For normal evaluation and first-time integration, use `lucaswenbo/ProdDoctor@v1.4.1`.
-- For production gates, pin the Action to the **full commit SHA** behind the release tag.
-- `@main` tracks current development and may change at any time. It is not recommended for production gating.
-- Concrete release tags such as `v1.4.1` are immutable after publication. Fixes should be released as a new patch, for example `v1.4.2`.
-- A floating major tag such as `v1` may point to the latest stable 1.x release, but it moves and is therefore not appropriate for environments that require strict reproducibility.
-- Features may still evolve quickly. Check [CHANGELOG.md](CHANGELOG.md) before upgrading.
+> **Green CI proves your pipeline finished. ProdDoctor checks whether the production experience actually works.**
 
 ## 30-second setup
 
@@ -44,29 +40,13 @@ The current public stable release is **v1.4.1**.
 
 No Cloudflare API token is required, and you do not need to modify your deployment platform configuration.
 
-## How to pin a version
-
-| Reference | Best for | Stability |
-|---|---|---|
-| `lucaswenbo/ProdDoctor@main` | Development, experimentation, latest code | Moves with `main`; not recommended for production gates |
-| `lucaswenbo/ProdDoctor@v1.4.1` | Recommended starting point | Concrete release tag; immutable by project policy |
-| `lucaswenbo/ProdDoctor@<commit-sha>` | Production and reproducible CI | Most stable; pins one exact commit |
-
-For production:
+Human-readable Action output defaults to **English**. For Chinese output:
 
 ```yaml
-- uses: lucaswenbo/ProdDoctor@<commit-sha>
-  with:
-    url: https://example.com
+with:
+  url: https://example.com
+  language: zh-CN
 ```
-
-Do not copy `<commit-sha>` literally. Open the GitHub Release or tag page for `v1.4.1`, follow it to the corresponding commit, and copy the full SHA. If you have the tag locally, you can also run:
-
-```bash
-git rev-list -n 1 v1.4.1
-```
-
-Then replace the placeholder in your workflow.
 
 ### A typical production failure
 
@@ -75,6 +55,18 @@ Then replace the placeholder in your workflow.
 </p>
 
 In the example above, the build, deployment, and platform URL all pass, but the real production domain returns a Cloudflare 403. ProdDoctor does not report only a generic failure: DNS is healthy, HTTP fails with 403, and Cloudflare Challenge / WAF is flagged as the likely failure layer. It then keeps report evidence for debugging before users have to report the outage first.
+
+## Why this is different from a normal uptime check
+
+A normal health check can tell you that a URL returned `200`. ProdDoctor is aimed at the awkward failures that happen **after a deployment looks successful**:
+
+- the custom domain reaches the wrong route or Worker
+- a Cloudflare/WAF rule blocks the production path
+- HTML returns `200`, but a JS/CSS asset is broken
+- the server response is healthy, but Chromium hits a runtime error
+- the page is the wrong version even though the status code is successful
+
+The goal is not only to say **red or green**. It is to leave enough evidence to make the next debugging step obvious.
 
 ## What ProdDoctor checks
 
@@ -155,18 +147,18 @@ ProdDoctor will access your production site directly from the GitHub-hosted runn
 
 A successful run stays green and ProdDoctor writes a summary to the GitHub Actions Job Summary.
 
-The current CLI/report output is primarily Chinese. A typical successful result looks like:
+Human-readable output defaults to English. A typical successful result looks like:
 
 ```text
-🩺 ProdDoctor 生产环境体检
-目标：https://example.com/
-结果：✅ 通过
+🩺 ProdDoctor production check
+Target：https://example.com/
+Result：✅ PASS
 
 ✅ DNS：93.184.216.34
-✅ 页面：200，143ms，尝试 1 次
+✅ Page：200，143ms，1 attempt(s)
 ⚠️ robots.txt：HTTP 404
 ✅ sitemap.xml：HTTP 200
-🛡️ 安全响应头：60/100
+🛡️ Security headers：60/100
 ```
 
 ---
@@ -438,6 +430,42 @@ Static sites stay lightweight, while frontend applications can opt into real bro
 
 ---
 
+# Version and stability
+
+The current public stable release is **v1.4.1**.
+
+- For normal evaluation and first-time integration, use `lucaswenbo/ProdDoctor@v1.4.1`.
+- For production gates, pin the Action to the **full commit SHA** behind the release tag.
+- `@main` tracks current development and may change at any time. It is not recommended for production gating.
+- Concrete release tags such as `v1.4.1` are immutable after publication. Fixes should be released as a new patch, for example `v1.4.2`.
+- A floating major tag such as `v1` may point to the latest stable 1.x release, but it moves and is therefore not appropriate for environments that require strict reproducibility.
+- Features may still evolve quickly. Check [CHANGELOG.md](CHANGELOG.md) before upgrading.
+
+## How to pin a version
+
+| Reference | Best for | Stability |
+|---|---|---|
+| `lucaswenbo/ProdDoctor@main` | Development, experimentation, latest code | Moves with `main`; not recommended for production gates |
+| `lucaswenbo/ProdDoctor@v1.4.1` | Recommended starting point | Concrete release tag; immutable by project policy |
+| `lucaswenbo/ProdDoctor@<commit-sha>` | Production and reproducible CI | Most stable; pins one exact commit |
+
+For production:
+
+```yaml
+- uses: lucaswenbo/ProdDoctor@<commit-sha>
+  with:
+    url: https://example.com
+```
+
+Do not copy `<commit-sha>` literally. Open the GitHub Release or tag page for `v1.4.1`, follow it to the corresponding commit, and copy the full SHA. If you have the tag locally, you can also run:
+
+```bash
+git rev-list -n 1 v1.4.1
+```
+
+Then replace the placeholder in your workflow.
+
+
 # Compatibility policy
 
 ProdDoctor follows SemVer and tries to keep existing workflows behaving as originally configured.
@@ -455,6 +483,7 @@ ProdDoctor follows SemVer and tries to keep existing workflows behaving as origi
 | Input | Required | Default | Purpose |
 |---|---|---|---|
 | `url` | Yes | None | Production URL to validate |
+| `language` | No | `en` | Human-readable output language: `en` or `zh-CN` |
 | `expect` | No | Empty | Raw HTML must contain this text |
 | `status` | No | Empty | Final HTTP status must exactly match |
 | `retries` | No | Action: `2`; CLI: `1` | Additional retries after failure |
@@ -493,7 +522,7 @@ This helps when a CDN or edge deployment needs a short propagation window.
 
 # Method 2: run locally
 
-The default HTTP mode has no third-party npm runtime dependencies. Browser mode requires Playwright.
+The default HTTP mode has no third-party npm runtime dependencies. Browser mode requires Playwright. Human-readable CLI output defaults to English; add `--lang zh-CN` when you want Chinese terminal and HTML output.
 
 ## Step 1: Node.js
 
