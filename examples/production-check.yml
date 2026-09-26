@@ -1,5 +1,5 @@
-# 用户示例：默认锁定具体版本 v1.4.1。
-# 生产流水线建议把 v1.4.1 替换为该 tag 对应的完整 commit SHA。
+# 用户示例：默认锁定具体版本 v1.5.0。
+# 生产流水线建议把 v1.5.0 替换为该 tag 对应的完整 commit SHA。
 
 name: Verify real production
 
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: lucaswenbo/ProdDoctor@v1.4.1
+      - uses: lucaswenbo/ProdDoctor@v1.5.0
         with:
           url: https://example.com
           expect: Example Domain
