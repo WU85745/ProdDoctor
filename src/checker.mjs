@@ -329,10 +329,12 @@ export async function runChecks(rawUrl, options = {}) {
         ? `HTTP 状态异常：${page.status}`
         : `HTTP 状态不符合预期：实际 ${page.status}，预期 ${expectedStatus}`
       );
+    } else if (page.error) {
+      failures.push(`请求失败：${page.error}`);
     } else if (!page.expectedOk) {
       failures.push('页面未包含指定关键字');
     } else {
-      failures.push(page.error ? `请求失败：${page.error}` : '生产页面检查失败');
+      failures.push('生产页面检查失败');
     }
   }
 
