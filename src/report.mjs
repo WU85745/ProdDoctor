@@ -187,7 +187,7 @@ export function toEnglishReport(result) {
 }
 
 export function toMarkdownSummary(result, options = {}) {
-  const lang = normalizeLanguage(options.language || 'en');
+  const lang = normalizeLanguage(options.language || 'zh-CN');
   const zh = lang === 'zh-CN';
   const noResponse = zh ? '无响应' : 'no response';
   const notChecked = zh ? '未检查' : 'not checked';
