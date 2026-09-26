@@ -684,6 +684,8 @@ node ./bin/proddoctor.mjs https://example.com \
 node ./bin/proddoctor.mjs https://example.com --json
 ```
 
+`failures`、`warnings` 等人类可读诊断文本会跟随 `language`；JSON 字段名和机器可读结构保持不变。
+
 输出包含：
 
 - 检查时间

@@ -2,7 +2,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { runChecks } from '../src/checker.mjs';
-import { normalizeLanguage, toChineseReport, toEnglishReport, toMarkdownSummary } from '../src/report.mjs';
+import { localizeResult, normalizeLanguage, toChineseReport, toEnglishReport, toMarkdownSummary } from '../src/report.mjs';
 import { toHtmlReport } from '../src/html-report.mjs';
 
 const pkg = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'));
@@ -255,9 +255,11 @@ try {
     browserTracePath
   });
 
+  const localizedJsonResult = localizeResult(result, language);
+
   const jsonFile = value('--json-file', process.env.PRODDOCTOR_JSON_FILE || null);
   if (jsonFile) {
-    await writeTextFile(jsonFile, `${JSON.stringify(result, null, 2)}\n`);
+    await writeTextFile(jsonFile, `${JSON.stringify(localizedJsonResult, null, 2)}\n`);
   }
 
   const htmlReport = value('--html-report', process.env.PRODDOCTOR_HTML_REPORT || null);
@@ -269,7 +271,7 @@ try {
     await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, `${toMarkdownSummary(result, { language })}\n`, 'utf8');
   }
 
-  if (args.includes('--json')) console.log(JSON.stringify(result, null, 2));
+  if (args.includes('--json')) console.log(JSON.stringify(localizedJsonResult, null, 2));
   else console.log(language === 'zh-CN' ? toChineseReport(result) : toEnglishReport(result));
 
   if (!result.ok) process.exitCode = 1;
