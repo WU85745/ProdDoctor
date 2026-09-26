@@ -150,3 +150,19 @@ test('successful reports do not invent a likely cause', () => {
   assert.equal(likelyCause(result), null);
   assert.doesNotMatch(toEnglishReport(result), /Likely cause:/);
 });
+
+
+test('request errors take priority over expected-content mismatch in likely cause', () => {
+  const result = sampleResult();
+  result.page.blockedByChallenge = false;
+  result.page.status = null;
+  result.page.statusOk = false;
+  result.page.expected = 'NEVER_PRESENT';
+  result.page.expectedOk = false;
+  result.page.error = 'fetch failed';
+  result.failures = ['请求失败：fetch failed'];
+
+  assert.equal(likelyCause(result), 'The production request failed before a valid response was received.');
+  assert.equal(likelyCause(result, 'zh-CN'), '生产请求在获得有效响应前失败。');
+  assert.doesNotMatch(toEnglishReport(result), /content did not match/i);
+});
