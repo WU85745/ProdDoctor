@@ -2,11 +2,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { runChecks } from '../src/checker.mjs';
-import { toChineseReport, toMarkdownSummary } from '../src/report.mjs';
+import { toChineseReport, toEnglishReport, toEnglishMarkdownSummary, toEnglishText, toMarkdownSummary } from '../src/report.mjs';
 import { toHtmlReport } from '../src/html-report.mjs';
 
-function usage() {
-  console.log(`ProdDoctor v1.4.1
+function usage(language = 'en') {
+  if (language === 'zh-CN') {
+    console.log(`ProdDoctor v1.4.1
 
 用法：
   proddoctor <URL> [选项]
@@ -14,49 +15,84 @@ function usage() {
 基础检查：
   --expect <文本>              要求原始 HTML 包含指定文本
   --status <状态码>            要求最终 HTTP 状态精确匹配，例如 200
-  --timeout <毫秒>            单次 HTTP 请求超时，默认 15000
-  --max-body-bytes <字节>     响应正文大小上限，默认 0（保持兼容，不限大小）
-  --retries <次数>            失败后的重试次数，默认 1
-  --no-assets                 不检查同源 JS/CSS 静态资源
-  --max-assets <数量>         最多检查的静态资源数量，默认 20
-  --tls-warn-days <天>        TLS 证书进入该剩余天数时给出提示，默认 14
+  --timeout <毫秒>             单次 HTTP 请求超时，默认 15000
+  --max-body-bytes <字节>      响应正文大小上限，默认 0
+  --retries <次数>             失败后的重试次数，默认 1
+  --no-assets                  不检查同源 JS/CSS 静态资源
+  --max-assets <数量>          最多检查的静态资源数量，默认 20
+  --tls-warn-days <天>         TLS 证书进入该剩余天数时给出提示，默认 14
+  --lang <语言>                en 或 zh-CN，默认 en
 
 浏览器检查：
-  --browser                   使用 Playwright + Chromium 执行真实浏览器检查
-  --browser-expect <文本>     要求浏览器渲染后的可见文本包含指定内容
-  --browser-timeout <毫秒>    浏览器导航超时，默认 30000
-  --browser-settle <毫秒>     DOMContentLoaded 后额外等待时间，默认 750
-  --browser-fail-console      Console error 也作为阻断问题
-  --browser-profile <类型>    desktop 或 mobile，默认 desktop
-  --browser-screenshot <路径> 保存整页截图
-  --browser-trace <模式>      off / on-failure / always，默认 off
-  --browser-trace-path <路径> Trace ZIP 保存路径
+  --browser                    使用 Playwright + Chromium
+  --browser-expect <文本>      要求渲染后的可见文本包含指定内容
+  --browser-timeout <毫秒>     浏览器导航超时，默认 30000
+  --browser-settle <毫秒>      DOMContentLoaded 后额外等待，默认 750
+  --browser-fail-console       Console error 也作为阻断问题
+  --browser-profile <类型>     desktop 或 mobile
+  --browser-screenshot <路径>  保存整页截图
+  --browser-trace <模式>       off / on-failure / always
+  --browser-trace-path <路径>  Trace ZIP 保存路径
 
 输出：
-  --json                      输出 JSON
-  --json-file <路径>          保存 JSON 报告
-  --html-report <路径>        保存独立 HTML 报告
-  --help                      显示帮助
-  --version                   显示版本
+  --json                       输出 JSON（语言无关）
+  --json-file <路径>           保存 JSON 报告
+  --html-report <路径>         保存本地化 HTML 报告
+  --help                       显示帮助
+  --version                    显示版本
+`);
+    return;
+  }
 
-示例：
-  proddoctor https://example.com
-  proddoctor https://example.com --expect "Example Domain" --status 200
-  proddoctor https://example.com --browser --browser-expect "Example Domain"
-  proddoctor https://example.com --browser --browser-profile mobile
-  proddoctor https://example.com --browser --browser-trace on-failure --browser-trace-path ./trace.zip
-  proddoctor https://example.com --html-report ./report.html --json-file ./report.json
+  console.log(`ProdDoctor v1.4.1
+
+Usage:
+  proddoctor <URL> [options]
+
+Core checks:
+  --expect <text>              Require raw HTML to contain text
+  --status <code>              Require an exact final HTTP status, e.g. 200
+  --timeout <ms>               HTTP request timeout, default 15000
+  --max-body-bytes <bytes>     Response body limit, default 0 (unlimited)
+  --retries <count>            Retries after the first failed attempt, default 1
+  --no-assets                  Skip same-origin JS/CSS checks
+  --max-assets <count>         Maximum static assets to check, default 20
+  --tls-warn-days <days>       Warn when TLS expiry is within this many days, default 14
+  --lang <language>            en or zh-CN, default en
+
+Browser checks:
+  --browser                    Run Playwright + Chromium validation
+  --browser-expect <text>      Require rendered visible text
+  --browser-timeout <ms>       Browser navigation timeout, default 30000
+  --browser-settle <ms>        Extra wait after DOMContentLoaded, default 750
+  --browser-fail-console       Treat console errors as blocking
+  --browser-profile <type>     desktop or mobile
+  --browser-screenshot <path>  Save a full-page screenshot
+  --browser-trace <mode>       off / on-failure / always
+  --browser-trace-path <path>  Save Playwright Trace ZIP
+
+Output:
+  --json                       Print language-neutral JSON
+  --json-file <path>           Save JSON report
+  --html-report <path>         Save localized HTML report
+  --help                       Show help
+  --version                    Show version
 `);
 }
-
 const args = process.argv.slice(2);
+const langIndex = args.indexOf('--lang');
+const language = langIndex === -1 ? (process.env.PRODDOCTOR_LANGUAGE || 'en') : args[langIndex + 1];
+if (!['en', 'zh-CN'].includes(language)) {
+  console.error('ProdDoctor startup failed: --lang must be en or zh-CN');
+  process.exit(2);
+}
 if (args.length === 1 && ['--version', '-V'].includes(args[0])) {
   const pkg = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'));
   console.log(pkg.version);
   process.exit(0);
 }
 if (!args.length || args.includes('--help') || args.includes('-h')) {
-  usage();
+  usage(language);
   process.exit(args.length ? 0 : 1);
 }
 
@@ -86,7 +122,7 @@ try {
   const valueFlags = new Set([
     '--expect', '--status', '--timeout', '--max-body-bytes', '--retries', '--max-assets', '--tls-warn-days',
     '--browser-expect', '--browser-timeout', '--browser-settle', '--browser-profile',
-    '--browser-screenshot', '--browser-trace', '--browser-trace-path', '--json-file', '--html-report'
+    '--browser-screenshot', '--browser-trace', '--browser-trace-path', '--json-file', '--html-report', '--lang'
   ]);
   const booleanFlags = new Set(['--no-assets', '--browser', '--browser-fail-console', '--json']);
   if (url.startsWith('-')) throw new Error('请先提供 URL；--version 用于显示版本');
@@ -195,18 +231,20 @@ try {
 
   const htmlReport = value('--html-report', process.env.PRODDOCTOR_HTML_REPORT || null);
   if (htmlReport) {
-    await writeTextFile(htmlReport, toHtmlReport(result, { reportPath: htmlReport }));
+    await writeTextFile(htmlReport, toHtmlReport(result, { reportPath: htmlReport, language }));
   }
 
   if (process.env.GITHUB_STEP_SUMMARY) {
-    await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, `${toMarkdownSummary(result)}\n`, 'utf8');
+    const summary = language === 'en' ? toEnglishMarkdownSummary(result) : toMarkdownSummary(result);
+    await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`, 'utf8');
   }
 
   if (args.includes('--json')) console.log(JSON.stringify(result, null, 2));
-  else console.log(toChineseReport(result));
+  else console.log(language === 'en' ? toEnglishReport(result) : toChineseReport(result));
 
   if (!result.ok) process.exitCode = 1;
 } catch (error) {
-  console.error(`ProdDoctor 启动失败：${error?.message || error}`);
+  const message = error?.message || error;
+  console.error(language === 'en' ? `ProdDoctor startup failed: ${toEnglishText(message)}` : `ProdDoctor 启动失败：${message}`);
   process.exitCode = 2;
 }
