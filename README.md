@@ -7,7 +7,7 @@
 [![Test ProdDoctor](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/test.yml/badge.svg)](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/test.yml)
 [![Smoke test GitHub Action](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/action-smoke.yml/badge.svg)](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/action-smoke.yml)
 [![Browser smoke test](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/browser-smoke.yml/badge.svg)](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/browser-smoke.yml)
-![Version](https://img.shields.io/badge/version-v2.0.1-2563eb)
+![Version](https://img.shields.io/badge/version-v2.1.0-2563eb)
 ![License](https://img.shields.io/badge/license-MIT-16a34a)
 
 <p align="center">
@@ -34,7 +34,7 @@ It validates DNS, HTTP, TLS, expected page content, same-origin assets, Cloudfla
 This is a **GitHub Actions step**, not a terminal command. Put it in the repository of the website you want to validate, inside a workflow such as `.github/workflows/production-check.yml` under a job's `steps:`.
 
 ```yaml
-- uses: lucaswenbo/ProdDoctor@v2.0.1
+- uses: lucaswenbo/ProdDoctor@v2.1.0
   with:
     url: https://example.com
     expect: My Website
@@ -89,7 +89,7 @@ The goal is not only to say **red or green**. It is to leave enough evidence to 
 - Request timing, retries, and JSON output
 - GitHub Actions Job Summary
 
-> v2.0.1 keeps lightweight HTTP validation as the default. Enable browser mode only when you need real Chromium execution, mobile evidence, screenshots, traces, or rendered-page assertions.
+> v2.1.0 keeps lightweight HTTP validation as the default. Enable browser mode only when you need real Chromium execution, mobile evidence, screenshots, traces, or rendered-page assertions.
 
 ---
 
@@ -126,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: lucaswenbo/ProdDoctor@v2.0.1
+      - uses: lucaswenbo/ProdDoctor@v2.1.0
         with:
           url: https://example.com
 ```
@@ -176,7 +176,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: lucaswenbo/ProdDoctor@v2.0.1
+      - uses: lucaswenbo/ProdDoctor@v2.1.0
         with:
           url: https://example.com
           expect: My Website
@@ -222,7 +222,7 @@ jobs:
       # - run: your-deploy-command
 
       - name: Verify real production domain
-        uses: lucaswenbo/ProdDoctor@v2.0.1
+        uses: lucaswenbo/ProdDoctor@v2.1.0
         with:
           url: https://example.com
           expect: My Website
@@ -249,7 +249,7 @@ pageerror         ❌ Cannot read properties of undefined
 Enable browser mode:
 
 ```yaml
-- uses: lucaswenbo/ProdDoctor@v2.0.1
+- uses: lucaswenbo/ProdDoctor@v2.1.0
   with:
     url: https://example.com
     browser: true
@@ -300,7 +300,7 @@ Uncaught JavaScript `pageerror` remains blocking.
 
 ### Evidence Artifact
 
-v2.0.1 stores browser evidence in an isolated artifact:
+v2.1.0 stores browser evidence in an isolated artifact:
 
 ```text
 proddoctor-evidence-<job>-<unique-id>/
@@ -428,12 +428,12 @@ Static sites stay lightweight, while frontend applications can opt into real bro
 
 # Version and stability
 
-The current public stable release is **v2.0.1**.
+The current public stable release is **v2.1.0**.
 
-- For normal evaluation and first-time integration, use `lucaswenbo/ProdDoctor@v2.0.1`.
+- For normal evaluation and first-time integration, use `lucaswenbo/ProdDoctor@v2.1.0`.
 - For production gates, pin the Action to the **full commit SHA** behind the release tag.
 - `@main` tracks current development and may change at any time. It is not recommended for production gating.
-- Concrete release tags such as `v2.0.1` are immutable after publication. Fixes should be released as a new patch, for example `v2.0.2`.
+- Concrete release tags such as `v2.1.0` are immutable after publication. Fixes should be released as a new patch, for example `v2.1.1`.
 - A floating major tag such as `v1` may point to the latest stable 1.x release, but it moves and is therefore not appropriate for environments that require strict reproducibility.
 - Features may still evolve quickly. Check [CHANGELOG.md](CHANGELOG.md) before upgrading.
 
@@ -442,7 +442,7 @@ The current public stable release is **v2.0.1**.
 | Reference | Best for | Stability |
 |---|---|---|
 | `lucaswenbo/ProdDoctor@main` | Development, experimentation, latest code | Moves with `main`; not recommended for production gates |
-| `lucaswenbo/ProdDoctor@v2.0.1` | Recommended starting point | Concrete release tag; immutable by project policy |
+| `lucaswenbo/ProdDoctor@v2.1.0` | Recommended starting point | Concrete release tag; immutable by project policy |
 | `lucaswenbo/ProdDoctor@<commit-sha>` | Production and reproducible CI | Most stable; pins one exact commit |
 
 For production:
@@ -453,10 +453,10 @@ For production:
     url: https://example.com
 ```
 
-Do not copy `<commit-sha>` literally. Open the GitHub Release or tag page for `v2.0.1`, follow it to the corresponding commit, and copy the full SHA. If you have the tag locally, you can also run:
+Do not copy `<commit-sha>` literally. Open the GitHub Release or tag page for `v2.1.0`, follow it to the corresponding commit, and copy the full SHA. If you have the tag locally, you can also run:
 
 ```bash
-git rev-list -n 1 v2.0.1
+git rev-list -n 1 v2.1.0
 ```
 
 Then replace the placeholder in your workflow.
