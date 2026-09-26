@@ -3,7 +3,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { runChecks } from '../src/checker.mjs';
 import { toChineseReport, toMarkdownSummary } from '../src/report.mjs';
+import { toEnglishReport, toEnglishMarkdownSummary } from '../src/report-en.mjs';
 import { toHtmlReport } from '../src/html-report.mjs';
+import { toEnglishHtmlReport } from '../src/html-report-en.mjs';
 
 function usage() {
   console.log(`ProdDoctor v1.4.1
@@ -33,6 +35,7 @@ function usage() {
   --browser-trace-path <路径> Trace ZIP 保存路径
 
 输出：
+  --lang <语言>              输出语言：zh-CN 或 en，默认 zh-CN
   --json                      输出 JSON
   --json-file <路径>          保存 JSON 报告
   --html-report <路径>        保存独立 HTML 报告
@@ -86,7 +89,7 @@ try {
   const valueFlags = new Set([
     '--expect', '--status', '--timeout', '--max-body-bytes', '--retries', '--max-assets', '--tls-warn-days',
     '--browser-expect', '--browser-timeout', '--browser-settle', '--browser-profile',
-    '--browser-screenshot', '--browser-trace', '--browser-trace-path', '--json-file', '--html-report'
+    '--browser-screenshot', '--browser-trace', '--browser-trace-path', '--lang', '--json-file', '--html-report'
   ]);
   const booleanFlags = new Set(['--no-assets', '--browser', '--browser-fail-console', '--json']);
   if (url.startsWith('-')) throw new Error('请先提供 URL；--version 用于显示版本');
@@ -116,6 +119,7 @@ try {
   const expectedStatus = rawStatus === null ? null : Number(rawStatus);
   const expected = value('--expect', '', { allowEmpty: true });
   const checkAssets = !args.includes('--no-assets');
+  const language = value('--lang', process.env.PRODDOCTOR_LANG || 'zh-CN');
 
   const browserEnabled = args.includes('--browser');
   const browserRenderedExpect = value('--browser-expect', '', { allowEmpty: true });
@@ -127,6 +131,9 @@ try {
   const browserTraceMode = value('--browser-trace', 'off');
   const browserTracePath = value('--browser-trace-path', null);
 
+  if (!['zh-CN', 'en'].includes(language)) {
+    throw new Error('--lang 只支持 zh-CN 或 en');
+  }
   if (!Number.isInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 2147483647) {
     throw new Error('--timeout 必须是 100 到 2147483647 的整数');
   }
@@ -195,15 +202,19 @@ try {
 
   const htmlReport = value('--html-report', process.env.PRODDOCTOR_HTML_REPORT || null);
   if (htmlReport) {
-    await writeTextFile(htmlReport, toHtmlReport(result, { reportPath: htmlReport }));
+    const html = language === 'en'
+      ? toEnglishHtmlReport(result, { reportPath: htmlReport })
+      : toHtmlReport(result, { reportPath: htmlReport });
+    await writeTextFile(htmlReport, html);
   }
 
   if (process.env.GITHUB_STEP_SUMMARY) {
-    await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, `${toMarkdownSummary(result)}\n`, 'utf8');
+    const summary = language === 'en' ? toEnglishMarkdownSummary(result) : toMarkdownSummary(result);
+    await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`, 'utf8');
   }
 
   if (args.includes('--json')) console.log(JSON.stringify(result, null, 2));
-  else console.log(toChineseReport(result));
+  else console.log(language === 'en' ? toEnglishReport(result) : toChineseReport(result));
 
   if (!result.ok) process.exitCode = 1;
 } catch (error) {
