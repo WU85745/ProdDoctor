@@ -66,6 +66,33 @@ export function localizeDiagnostic(text, language = 'en') {
   return translateBrowserDiagnostic(value);
 }
 
+export function localizeResult(result, language = 'en') {
+  const lang = normalizeLanguage(language);
+  if (lang === 'zh-CN') return result;
+
+  const localizeList = (items = []) => items.map((item) => localizeDiagnostic(item, lang));
+
+  return {
+    ...result,
+    failures: localizeList(result.failures),
+    warnings: localizeList(result.warnings),
+    tls: {
+      ...result.tls,
+      warning: result.tls?.warning ? localizeDiagnostic(result.tls.warning, lang) : result.tls?.warning
+    },
+    assets: {
+      ...result.assets,
+      reason: result.assets?.reason ? localizeDiagnostic(result.assets.reason, lang) : result.assets?.reason
+    },
+    browser: {
+      ...result.browser,
+      reason: result.browser?.reason ? localizeDiagnostic(result.browser.reason, lang) : result.browser?.reason,
+      failures: localizeList(result.browser?.failures),
+      warnings: localizeList(result.browser?.warnings)
+    }
+  };
+}
+
 function shortAsset(asset, language) {
   const lang = normalizeLanguage(language);
   const suffix = asset.htmlFallback
