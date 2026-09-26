@@ -2,6 +2,13 @@
 
 所有值得记录的变更都集中在这里。格式遵循 Keep a Changelog 的组织方式，版本号遵循 SemVer。
 
+## [1.5.0](https://github.com/lucaswenbo/ProdDoctor/compare/v1.4.1...v1.5.0) (2026-09-26)
+
+
+### Features
+
+* add bilingual output and improve onboarding ([64fcf1a](https://github.com/lucaswenbo/ProdDoctor/commit/64fcf1acfa707e04f8807f5f609ecf6497869731))
+
 ## [1.4.1](https://github.com/lucaswenbo/ProdDoctor/compare/v1.4.0...v1.4.1) (2026-09-25)
 
 
