@@ -195,7 +195,20 @@ const EN_EXACT = new Map([
   ['浏览器检查无法完成', 'Browser check could not complete'],
   ['未启用静态资源检查', 'Static asset checks disabled'],
   ['生产页面没有可分析的响应正文', 'Production page has no response body to inspect'],
-  ['未启用浏览器检查', 'Browser checks disabled']
+  ['未启用浏览器检查', 'Browser checks disabled'],
+  ['检查结果', 'Check results'],
+  ['浏览器证据', 'Browser evidence'],
+  ['页面截图', 'Page screenshot'],
+  ['未捕获 JavaScript 异常', 'Uncaught JavaScript errors'],
+  ['关键同源请求失败', 'Critical same-origin request failures'],
+  ['关键同源 4xx/5xx', 'Critical same-origin 4xx/5xx'],
+  ['阻断问题', 'Blocking issues'],
+  ['提示', 'Warnings'],
+  ['无', 'None'],
+  ['失败', 'failed'],
+  ['检测到疑似挑战页', 'Likely challenge page detected'],
+  ['未发现典型阻断', 'No typical block detected'],
+  ['未检查', 'Not checked']
 ]);
 
 export function toEnglishText(value) {
@@ -285,7 +298,7 @@ export function toEnglishText(value) {
     [/详情/g, 'Details']
   ];
   for (const [pattern, replacement] of replacements) text = text.replace(pattern, replacement);
-  return text;
+  return text.replaceAll('，', ', ').replaceAll('；', '; ').replaceAll('：', ': ').replaceAll('（', ' (').replaceAll('）', ')');
 }
 
 export function toEnglishReport(result) {
