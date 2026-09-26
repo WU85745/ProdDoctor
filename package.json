@@ -1,6 +1,6 @@
 {
   "name": "proddoctor",
-  "version": "1.5.0",
+  "version": "2.0.0",
   "description": "Post-deploy checks for real production domains with optional browser evidence, traces and HTML reports.",
   "type": "module",
   "bin": {

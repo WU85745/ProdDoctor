@@ -6,7 +6,7 @@ import { normalizeLanguage, toChineseReport, toEnglishReport, toMarkdownSummary 
 import { toHtmlReport } from '../src/html-report.mjs';
 
 const pkg = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'));
-const CLI_BANNER = 'ProdDoctor v1.5.0';
+const CLI_BANNER = 'ProdDoctor v2.0.0';
 
 function earlyLanguage(args) {
   const i = args.indexOf('--lang');

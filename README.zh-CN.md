@@ -7,7 +7,7 @@
 [![Test ProdDoctor](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/test.yml/badge.svg)](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/test.yml)
 [![Smoke test GitHub Action](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/action-smoke.yml/badge.svg)](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/action-smoke.yml)
 [![Browser smoke test](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/browser-smoke.yml/badge.svg)](https://github.com/lucaswenbo/ProdDoctor/actions/workflows/browser-smoke.yml)
-![Version](https://img.shields.io/badge/version-v1.5.0-2563eb)
+![Version](https://img.shields.io/badge/version-v2.0.0-2563eb)
 ![License](https://img.shields.io/badge/license-MIT-16a34a)
 
 <p align="center">
@@ -34,7 +34,7 @@ ProdDoctor 会在部署之后继续检查**用户真正访问到的那条生产�
 下面这段是 **GitHub Actions 的一个 step**，不是终端命令。把它放到你要检查的网站仓库中，例如 `.github/workflows/production-check.yml`，并放在某个 job 的 `steps:` 下面。
 
 ```yaml
-- uses: lucaswenbo/ProdDoctor@v1.5.0
+- uses: lucaswenbo/ProdDoctor@v2.0.0
   with:
     url: https://example.com
     expect: My Website
@@ -85,7 +85,7 @@ ProdDoctor 会在部署之后继续检查**用户真正访问到的那条生产�
 - 请求耗时、失败重试、JSON 输出
 - GitHub Actions Job Summary
 
-> v1.5.0 默认仍保持轻量 HTTP 检查；需要时可以启用 Playwright + Chromium 浏览器模式。浏览器模式现在还可以生成移动端证据、失败 Trace、整页截图，以及独立的 HTML / JSON Production Report。
+> v2.0.0 默认仍保持轻量 HTTP 检查；需要时可以启用 Playwright + Chromium 浏览器模式。浏览器模式现在还可以生成移动端证据、失败 Trace、整页截图，以及独立的 HTML / JSON Production Report。
 
 ---
 
@@ -126,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: lucaswenbo/ProdDoctor@v1.5.0
+      - uses: lucaswenbo/ProdDoctor@v2.0.0
         with:
           url: https://example.com
           language: zh-CN
@@ -219,7 +219,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: lucaswenbo/ProdDoctor@v1.5.0
+      - uses: lucaswenbo/ProdDoctor@v2.0.0
         with:
           url: https://example.com
           expect: My Website
@@ -269,7 +269,7 @@ jobs:
       # - run: your-deploy-command
 
       - name: Verify real production domain
-        uses: lucaswenbo/ProdDoctor@v1.5.0
+        uses: lucaswenbo/ProdDoctor@v2.0.0
         with:
           url: https://example.com
           expect: My Website
@@ -296,7 +296,7 @@ pageerror         ❌ Cannot read properties of undefined
 启用浏览器模式：
 
 ```yaml
-- uses: lucaswenbo/ProdDoctor@v1.5.0
+- uses: lucaswenbo/ProdDoctor@v2.0.0
   with:
     url: https://example.com
     browser: true
@@ -351,7 +351,7 @@ with:
 
 ### Evidence Artifact
 
-v1.5.0 会把浏览器证据集中放在一个 Artifact 中：
+v2.0.0 会把浏览器证据集中放在一个 Artifact 中：
 
 ```text
 proddoctor-evidence-<job>-<unique-id>/
@@ -483,13 +483,13 @@ Playwright + Chromium
 
 # 版本与稳定性
 
-当前对外稳定版本为 **v1.5.0**。用户示例默认引用具体版本 `@v1.5.0`；如果 Releases / tag 页面尚未出现该版本，请先不要把这个引用用于实际流水线。
+当前对外稳定版本为 **v2.0.0**。用户示例默认引用具体版本 `@v2.0.0`；如果 Releases / tag 页面尚未出现该版本，请先不要把这个引用用于实际流水线。
 
 - 功能仍可能较快增加，升级前请先查看 [CHANGELOG.md](CHANGELOG.md)。
-- 一般试用或首次接入，使用 `lucaswenbo/ProdDoctor@v1.5.0`。
+- 一般试用或首次接入，使用 `lucaswenbo/ProdDoctor@v2.0.0`。
 - 生产门禁建议把具体 tag 换成该 tag 对应的**完整 commit SHA**，避免任何引用漂移。
 - `@main` 跟踪最新开发代码，行为可能随时变化，不建议用于生产门禁。
-- 具体版本 tag（例如 `v1.5.0`）发布后禁止移动；补丁修复应发布新的 patch 版本，例如 `v1.5.1`。
+- 具体版本 tag（例如 `v2.0.0`）发布后禁止移动；补丁修复应发布新的 patch 版本，例如 `v2.0.1`。
 - 可维护浮动 major tag（例如 `v1`）指向当前 1.x 最新发布，但它会移动，不适合要求严格可复现的生产流水线。
 
 ## 如何锁定版本
@@ -499,7 +499,7 @@ Playwright + Chromium
 | 引用方式 | 适合场景 | 稳定性 |
 |---|---|---|
 | `lucaswenbo/ProdDoctor@main` | 开发、试用、验证最新代码 | 会随 main 变化，不建议用于生产门禁 |
-| `lucaswenbo/ProdDoctor@v1.5.0` | 推荐入门和一般项目接入 | 具体版本 tag，按项目约定发布后不移动 |
+| `lucaswenbo/ProdDoctor@v2.0.0` | 推荐入门和一般项目接入 | 具体版本 tag，按项目约定发布后不移动 |
 | `lucaswenbo/ProdDoctor@<commit-sha>` | 生产流水线、严格可复现环境 | 最稳定，精确锁定到一个提交 |
 
 生产环境建议使用：
@@ -510,10 +510,10 @@ Playwright + Chromium
     url: https://example.com
 ```
 
-不要把 `<commit-sha>` 原样复制。发布 `v1.5.0` 后，可以从 GitHub **Releases / v1.5.0 tag 页面**进入该版本对应的 commit，再复制完整 SHA；本地已拉取 tag 时也可以运行：
+不要把 `<commit-sha>` 原样复制。发布 `v2.0.0` 后，可以从 GitHub **Releases / v2.0.0 tag 页面**进入该版本对应的 commit，再复制完整 SHA；本地已拉取 tag 时也可以运行：
 
 ```bash
-git rev-list -n 1 v1.5.0
+git rev-list -n 1 v2.0.0
 ```
 
 得到该 tag 对应的完整 commit SHA 后，再替换 Workflow 里的占位符。
