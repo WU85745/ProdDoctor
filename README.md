@@ -14,13 +14,48 @@
   <img src=".github/assets/proddoctor-hero.svg" alt="ProdDoctor - post-deploy production validation" width="100%">
 </p>
 
-**Post-deploy production validation that helps show you where production broke.**
+## Your deploy passed. But does production actually work?
 
-ProdDoctor checks the environment users actually reach after deployment. It does not stop at “Build passed” or “Deploy command succeeded”. It validates the real production path across DNS, HTTP, TLS, page content, same-origin assets, Cloudflare/WAF behavior, and optional Chromium runtime checks.
+```text
+CI                 ✅
+Deploy             ✅
+Platform URL       ✅
+Real production    ❌
+```
 
-When something fails, ProdDoctor does more than return a red check. It narrows the failure to the likely layer and preserves debugging evidence such as failed requests, screenshots, Playwright traces, and HTML/JSON reports.
+**ProdDoctor checks the site your users actually reach after deployment, then helps narrow down where it broke.**
 
-> **Your deploy passed. ProdDoctor checks whether production actually works and helps show you where it broke.**
+It validates the real production path across DNS, HTTP, TLS, same-origin assets, Cloudflare/WAF behavior, and optional Chromium runtime checks. When production fails, it can preserve screenshots, Playwright traces, and HTML/JSON evidence instead of leaving you with a generic red check.
+
+### 30-second setup
+
+```yaml
+- uses: lucaswenbo/ProdDoctor@v1.4.1
+  with:
+    url: https://example.com
+    expect: My Website
+    language: en
+```
+
+**No Cloudflare API token. No deployment-platform reconfiguration.**
+
+### What a useful failure looks like
+
+<p align="center">
+  <img src=".github/assets/proddoctor-demo.svg" alt="ProdDoctor detects a real production-domain failure after CI passes" width="100%">
+</p>
+
+```text
+Build / deploy       ✅ passed
+Platform URL         ✅ reachable
+Production domain    ❌ HTTP 403
+DNS                  ✅ healthy
+TLS                  ✅ healthy
+Likely layer         ⚠️ Cloudflare Challenge / WAF
+Evidence             📎 screenshot + trace + report
+```
+
+ProdDoctor is designed for the gap between **“the deployment command succeeded”** and **“the real site works for users.”** It can also catch HTTP 200 pages that are the wrong version, broken same-origin JS/CSS, browser-only JavaScript failures, and rendered-text mismatches.
 
 ## Version and stability
 
@@ -33,16 +68,15 @@ The current public stable release is **v1.4.1**.
 - A floating major tag such as `v1` may point to the latest stable 1.x release, but it moves and is therefore not appropriate for environments that require strict reproducibility.
 - Features may still evolve quickly. Check [CHANGELOG.md](CHANGELOG.md) before upgrading.
 
-## 30-second setup
+### Output language
 
-```yaml
-- uses: lucaswenbo/ProdDoctor@v1.4.1
-  with:
-    url: https://example.com
-    expect: My Website
-```
+Human-readable CLI output, GitHub Actions Job Summary, and HTML reports support:
 
-No Cloudflare API token is required, and you do not need to modify your deployment platform configuration.
+- `language: en` in GitHub Actions
+- `--lang en` in the CLI
+- `zh-CN` remains the default for backward compatibility
+
+JSON field names and machine-readable structure stay unchanged.
 
 ## How to pin a version
 
@@ -67,15 +101,6 @@ git rev-list -n 1 v1.4.1
 ```
 
 Then replace the placeholder in your workflow.
-
-### A typical production failure
-
-<p align="center">
-  <img src=".github/assets/proddoctor-demo.svg" alt="ProdDoctor detects a real production-domain failure after CI passes" width="100%">
-</p>
-
-In the example above, the build, deployment, and platform URL all pass, but the real production domain returns a Cloudflare 403. ProdDoctor does not report only a generic failure: DNS is healthy, HTTP fails with 403, and Cloudflare Challenge / WAF is flagged as the likely failure layer. It then keeps report evidence for debugging before users have to report the outage first.
-
 ## What ProdDoctor checks
 
 - DNS resolution
@@ -155,18 +180,18 @@ ProdDoctor will access your production site directly from the GitHub-hosted runn
 
 A successful run stays green and ProdDoctor writes a summary to the GitHub Actions Job Summary.
 
-The current CLI/report output is primarily Chinese. A typical successful result looks like:
+A typical English result with `language: en` looks like:
 
 ```text
-🩺 ProdDoctor 生产环境体检
-目标：https://example.com/
-结果：✅ 通过
+🩺 ProdDoctor production check
+Target: https://example.com/
+Result: ✅ PASS
 
-✅ DNS：93.184.216.34
-✅ 页面：200，143ms，尝试 1 次
-⚠️ robots.txt：HTTP 404
-✅ sitemap.xml：HTTP 200
-🛡️ 安全响应头：60/100
+✅ DNS: 93.184.216.34
+✅ Page: 200, 143ms, 1 attempt(s)
+⚠️ robots.txt: HTTP 404
+✅ sitemap.xml: HTTP 200
+🛡️ Security headers: 60/100
 ```
 
 ---
