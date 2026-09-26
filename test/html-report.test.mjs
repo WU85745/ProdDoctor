@@ -53,7 +53,7 @@ function sampleResult() {
 }
 
 test('HTML report 包含关键证据链接和浏览器 profile', () => {
-  const html = toHtmlReport(sampleResult(), { reportPath: '/tmp/reports/report.html' });
+  const html = toHtmlReport(sampleResult(), { reportPath: '/tmp/reports/report.html', language: 'en' });
 
   assert.match(html, /ProdDoctor Production Report/);
   assert.match(html, /mobile/);
