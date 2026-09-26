@@ -143,7 +143,7 @@ export function likelyCause(result, language = 'en') {
   if (result.assets?.checked && !result.assets.ok) {
     return zh
       ? '生产页面已返回，但至少一个关键同源 JS/CSS 资源不可用或内容异常。'
-      : 'The production page responded, but at least one critical same-origin JS/CSS asset is unavailable or invalid.';
+      : 'The production page responded, but at least one same-origin JS/CSS asset is unavailable or invalid.';
   }
 
   if (result.browser?.checked && !result.browser.ok) {
