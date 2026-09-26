@@ -234,3 +234,23 @@ test('expectedStatus 不匹配会失败', async (t) => {
   assert.equal(result.ok, false);
   assert.match(result.failures.join('\n'), /预期 200/);
 });
+
+
+test('请求无响应且配置 expect 时应优先报告请求失败', async () => {
+  const server = await startServer((_req, res) => res.end('temporary'));
+  const { port } = server.address();
+  await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+
+  const result = await runChecks(`http://127.0.0.1:${port}/unreachable`, {
+    expected: 'NEVER_PRESENT',
+    checkAssets: false,
+    retries: 0,
+    timeoutMs: 500
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.page.status, null);
+  assert.ok(result.page.error);
+  assert.match(result.failures.join('\n'), /请求失败：/);
+  assert.doesNotMatch(result.failures.join('\n'), /页面未包含指定关键字/);
+});
