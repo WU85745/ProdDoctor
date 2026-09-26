@@ -39,7 +39,7 @@ function relativeEvidenceLink(filePath, reportPath) {
 }
 
 export function toHtmlReport(result, options = {}) {
-  const language = normalizeLanguage(options.language || 'en');
+  const language = normalizeLanguage(options.language || 'zh-CN');
   const zh = language === 'zh-CN';
   const browser = result.browser;
   const screenshotName = relativeEvidenceLink(browser?.screenshotPath, options.reportPath);
