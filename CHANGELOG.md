@@ -12,6 +12,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- Add English and Simplified Chinese human-readable output for CLI, GitHub Actions Job Summary, and HTML reports.
+- Add `language` GitHub Action input and `--lang` CLI option (`en` / `zh-CN`).
+
+### Changed
+
+- Default human-readable output is now English for broader GitHub/Marketplace adoption; JSON output and exit semantics are unchanged.
+- Rework the English and Chinese README opening sections around the production-failure story, 30-second setup, and evidence demo.
+
 ## [1.4.0]
 
 > 当前建议用户引用的具体版本为 `v1.4.0`。只有在对应 Git tag 已发布后，`lucaswenbo/ProdDoctor@v1.4.0` 才会成为可解析的 Action 引用。

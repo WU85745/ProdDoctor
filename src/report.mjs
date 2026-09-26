@@ -181,3 +181,129 @@ export function toMarkdownSummary(result) {
     ...(result.warnings.length ? ['### 提示', ...result.warnings.map(x => `- ${x}`), ''] : [])
   ].join('\n');
 }
+
+
+const EN_EXACT = new Map([
+  ['DNS 解析失败', 'DNS resolution failed'],
+  ['疑似被 Cloudflare Challenge / WAF 阻断', 'Likely blocked by Cloudflare Challenge / WAF'],
+  ['页面未包含指定关键字', 'Page did not contain the expected text'],
+  ['生产页面检查失败', 'Production page check failed'],
+  ['TLS 证书检查失败', 'TLS certificate check failed'],
+  ['浏览器导航没有收到主文档响应', 'Browser navigation received no main-document response'],
+  ['浏览器渲染后的页面未包含指定文本', 'Rendered page did not contain the expected text'],
+  ['页面渲染后 body 可见文本为空', 'Rendered body contains no visible text'],
+  ['浏览器检查无法完成', 'Browser check could not complete'],
+  ['未启用静态资源检查', 'Static asset checks disabled'],
+  ['生产页面没有可分析的响应正文', 'Production page has no response body to inspect'],
+  ['未启用浏览器检查', 'Browser checks disabled'],
+]);
+
+export function toEnglishText(value) {
+  let text = String(value ?? '');
+  for (const [zh, en] of EN_EXACT) text = text.replaceAll(zh, en);
+
+  const replacements = [
+    [/ProdDoctor 生产环境体检/g, 'ProdDoctor production check'],
+    [/目标：/g, 'Target: '],
+    [/结果：/g, 'Result: '],
+    [/✅ 通过/g, '✅ PASS'],
+    [/❌ 未通过/g, '❌ FAIL'],
+    [/页面：/g, 'Page: '],
+    [/无响应/g, 'no response'],
+    [/预期 (\d+)/g, 'expected $1'],
+    [/尝试 (\d+) 次/g, '$1 attempt(s)'],
+    [/最终地址：/g, 'Final URL: '],
+    [/页面内容：/g, 'Expected text: '],
+    [/已找到/g, 'found'],
+    [/未找到/g, 'not found'],
+    [/疑似 Challenge \/ WAF 阻断/g, 'likely Challenge / WAF block'],
+    [/检测到 CF-Ray/g, 'CF-Ray detected'],
+    [/TLS：/g, 'TLS: '],
+    [/证书链校验通过/g, 'certificate chain valid'],
+    [/校验失败/g, 'validation failed'],
+    [/剩余约 (\d+) 天/g, 'about $1 days remaining'],
+    [/未检查（目标不是 HTTPS）/g, 'not checked (target is not HTTPS)'],
+    [/静态资源：/g, 'Assets: '],
+    [/检查 (\d+) 个同源 JS\/CSS，失败 (\d+) 个/g, 'checked $1 same-origin JS/CSS asset(s), $2 failed'],
+    [/还有 (\d+) 个失败资源未在终端展开/g, '$1 more failed asset(s) not shown'],
+    [/未检查（/g, 'not checked ('],
+    [/未启用/g, 'disabled'],
+    [/浏览器：/g, 'Browser: '],
+    [/无标题/g, 'untitled'],
+    [/可见文本：(\d+) 字符/g, 'Visible text: $1 characters'],
+    [/渲染文本：/g, 'Rendered text: '],
+    [/JS 未捕获异常：(\d+)；Console error：(\d+)/g, 'Uncaught JS errors: $1; console errors: $2'],
+    [/关键同源请求失败：(\d+)；关键同源 4xx\/5xx：(\d+)/g, 'Critical same-origin request failures: $1; critical same-origin 4xx/5xx: $2'],
+    [/截图：/g, 'Screenshot: '],
+    [/安全响应头：/g, 'Security headers: '],
+    [/已有：/g, 'Present: '],
+    [/缺少：/g, 'Missing: '],
+    [/阻断问题：/g, 'Blocking issues:'],
+    [/提示：/g, 'Warnings:'],
+    [/检查完成：主要生产环境检查通过。/g, 'Check complete: main production checks passed.'],
+    [/检查未通过，请根据上方阻断问题继续排查。/g, 'Check failed. Investigate the blocking issues above.'],
+    [/返回了 HTML，可能是错误路由或 SPA fallback/g, 'returned HTML; possible wrong route or SPA fallback'],
+    [/入口 URL 不是 HTTPS。/g, 'Entry URL is not HTTPS.'],
+    [/最终跳转到了其他 Origin：/g, 'Final redirect moved to another origin: '],
+    [/缺少常见安全响应头：/g, 'Missing common security headers: '],
+    [/未检测到可正常访问的 robots\.txt。/g, 'No accessible robots.txt detected.'],
+    [/未检测到可正常访问的 sitemap\.xml。/g, 'No accessible sitemap.xml detected.'],
+    [/静态资源检查达到上限 (\d+) 个，页面可能还有更多资源未检查。/g, 'Asset check reached the $1-item limit; more page assets may remain unchecked.'],
+    [/HTTP 状态异常：/g, 'Unexpected HTTP status: '],
+    [/HTTP 状态不符合预期：实际 (\d+)，预期 (\d+)/g, 'HTTP status mismatch: got $1, expected $2'],
+    [/请求失败：/g, 'Request failed: '],
+    [/TLS 证书校验失败：/g, 'TLS certificate validation failed: '],
+    [/发现 (\d+) 个不可用或返回异常内容的同源 JS\/CSS 资源/g, 'Found $1 unavailable or invalid same-origin JS/CSS asset(s)'],
+    [/浏览器检查失败：/g, 'Browser check failed: '],
+    [/浏览器主文档返回 HTTP (\d+)/g, 'Browser main document returned HTTP $1'],
+    [/页面运行时出现 (\d+) 个未捕获 JavaScript 异常/g, 'Page runtime produced $1 uncaught JavaScript error(s)'],
+    [/浏览器中有 (\d+) 个关键同源请求失败/g, 'Browser saw $1 critical same-origin request failure(s)'],
+    [/浏览器中有 (\d+) 个关键同源资源返回 4xx\/5xx/g, 'Browser saw $1 critical same-origin resource(s) return 4xx/5xx'],
+    [/浏览器 Console 出现 (\d+) 条 error（当前仅提示）/g, 'Browser console produced $1 error(s) (warning only)'],
+    [/浏览器 Console 出现 (\d+) 条 error/g, 'Browser console produced $1 error(s)'],
+    [/截图保存失败：/g, 'Screenshot save failed: '],
+    [/Trace 保存失败：/g, 'Trace save failed: '],
+    [/页面 Content-Type 不是 HTML：/g, 'Page Content-Type is not HTML: '],
+    [/（返回 HTML）/g, ' (returned HTML)'],
+    [/未配置/g, 'not configured'],
+    [/未发现/g, 'not detected'],
+    [/证书链正常/g, 'certificate chain valid'],
+    [/异常/g, 'error'],
+    [/(\d+) 天/g, '$1 days'],
+    [/(\d+) 个 · 失败 (\d+) 个/g, '$1 item(s) · $2 failed'],
+    [/生产页面/g, 'Production page'],
+    [/页面内容/g, 'Expected text'],
+    [/Cloudflare 阻断/g, 'Cloudflare block'],
+    [/同源 JS\/CSS/g, 'Same-origin JS/CSS'],
+    [/安全响应头/g, 'Security headers'],
+    [/失败的同源 JS\/CSS/g, 'Failed same-origin JS/CSS'],
+    [/浏览器详情/g, 'Browser details'],
+    [/生产环境通过/g, 'production passed'],
+    [/生产环境未通过/g, 'production failed'],
+    [/检查项/g, 'Check'],
+    [/状态/g, 'Status'],
+    [/详情/g, 'Details'],
+    [/检查结果/g, 'Check results'],
+    [/浏览器证据/g, 'Browser evidence'],
+    [/页面截图/g, 'Page screenshot'],
+    [/未捕获 JavaScript 异常/g, 'Uncaught JavaScript errors'],
+    [/关键同源请求失败/g, 'Critical same-origin request failures'],
+    [/关键同源 4xx\/5xx/g, 'Critical same-origin 4xx/5xx'],
+    [/阻断问题/g, 'Blocking issues'],
+    [/提示/g, 'Warnings'],
+    [/检测到疑似挑战页/g, 'Likely challenge page detected'],
+    [/未发现典型阻断/g, 'No typical block detected'],
+    [/未检查/g, 'Not checked'],
+    [/无/g, 'None']
+  ];
+  for (const [pattern, replacement] of replacements) text = text.replace(pattern, replacement);
+  return text.replaceAll('，', ', ').replaceAll('；', '; ').replaceAll('：', ': ').replaceAll('（', ' (').replaceAll('）', ')');
+}
+
+export function toEnglishReport(result) {
+  return toEnglishText(toChineseReport(result));
+}
+
+export function toEnglishMarkdownSummary(result) {
+  return toEnglishText(toMarkdownSummary(result));
+}

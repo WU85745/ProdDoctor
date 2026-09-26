@@ -41,6 +41,10 @@ inputs:
     description: 'Warn when the TLS certificate has this many days remaining'
     required: false
     default: '14'
+  language:
+    description: 'Human-readable output language: en or zh-CN'
+    required: false
+    default: 'en'
 
   browser:
     description: 'Enable Playwright + Chromium browser validation'
@@ -106,6 +110,7 @@ runs:
         PROD_DOCTOR_BROWSER_EXPECT: ${{ inputs.browser_expect }}
         PROD_DOCTOR_BROWSER_PROFILE: ${{ inputs.browser_profile }}
         PROD_DOCTOR_BROWSER_TRACE: ${{ inputs.browser_trace }}
+        PROD_DOCTOR_LANGUAGE: ${{ inputs.language }}
       run: |
         for value in           "$PROD_DOCTOR_CHECK_ASSETS"           "$PROD_DOCTOR_BROWSER"           "$PROD_DOCTOR_BROWSER_FAIL_CONSOLE"           "$PROD_DOCTOR_UPLOAD_SCREENSHOT"           "$PROD_DOCTOR_UPLOAD_REPORT"; do
           case "$value" in
@@ -121,6 +126,14 @@ runs:
           desktop|mobile) ;;
           *)
             echo "browser_profile 只接受 desktop 或 mobile"
+            exit 2
+            ;;
+        esac
+
+        case "$PROD_DOCTOR_LANGUAGE" in
+          en|zh-CN) ;;
+          *)
+            echo "language accepts only en or zh-CN"
             exit 2
             ;;
         esac
@@ -186,6 +199,7 @@ runs:
         PROD_DOCTOR_UPLOAD_SCREENSHOT: ${{ inputs.upload_screenshot }}
         PROD_DOCTOR_UPLOAD_REPORT: ${{ inputs.upload_report }}
         PROD_DOCTOR_EVIDENCE_DIR: ${{ steps.evidence.outputs.dir }}
+        PROD_DOCTOR_LANGUAGE: ${{ inputs.language }}
       run: |
         args=(
           "$PROD_DOCTOR_URL"
@@ -194,6 +208,7 @@ runs:
           --max-body-bytes "$PROD_DOCTOR_MAX_BODY_BYTES"
           --max-assets "$PROD_DOCTOR_MAX_ASSETS"
           --tls-warn-days "$PROD_DOCTOR_TLS_WARN_DAYS"
+          --lang "$PROD_DOCTOR_LANGUAGE"
         )
 
         if [ -n "$PROD_DOCTOR_EXPECT" ]; then

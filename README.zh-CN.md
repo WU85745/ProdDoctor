@@ -14,13 +14,76 @@
   <img src=".github/assets/proddoctor-hero.svg" alt="ProdDoctor - post-deploy production validation" width="100%">
 </p>
 
-**部署后直接验证真实生产环境，并帮你缩小故障范围。**
+## 部署成功了，但生产环境真的能用吗？
 
-ProdDoctor 在部署完成后直接检查用户真正访问到的生产环境。它不会只停在“Build 成功”或“Deploy 命令成功”，而是继续验证 DNS、HTTP、TLS、真实页面内容、同源资源、Cloudflare/WAF，以及可选的 Chromium 运行时。
+```text
+CI / 构建          ✅
+部署命令           ✅
+平台默认地址       ✅
+真实生产域名       ❌
+```
 
-当检查失败时，ProdDoctor 不只是给出一个红叉。它会把问题缩小到更可能出错的层级，并保留失败请求、截图、Playwright Trace、HTML / JSON 报告等调试证据。
+ProdDoctor 就是专门检查这段“最后一公里”的。
 
-> **Deploy 绿了，不代表生产环境正常。ProdDoctor 会继续检查用户真正访问到的那一层，并告诉你大概率坏在哪。**
+它会验证**用户部署后真正访问到的生产站点**，并帮助把故障范围缩小到 DNS、HTTP、TLS、同源静态资源、Cloudflare/WAF，或可选的 Chromium 运行时层。
+
+开启浏览器模式后，还可以保留故障现场证据：截图、Playwright Trace、失败请求以及 HTML/JSON 报告。
+
+> **CI 变绿只能说明流水线跑完了。ProdDoctor 检查的是生产环境到底能不能真的工作。**
+
+## 30 秒接入
+
+```yaml
+- uses: lucaswenbo/ProdDoctor@v1.4.1
+  with:
+    url: https://example.com
+    expect: My Website
+    language: zh-CN
+```
+
+不需要 Cloudflare API Token，也不需要修改部署平台配置。人类可读输出默认是英文；中文用户可设置 `language: zh-CN`，CLI 则使用 `--lang zh-CN`。
+
+### 一个典型的生产事故
+
+<p align="center">
+  <img src=".github/assets/proddoctor-demo.svg" alt="ProdDoctor 检测 CI 通过但真实生产域名失败" width="100%">
+</p>
+
+```text
+构建             ✅
+部署             ✅
+平台默认地址     ✅
+生产域名         ❌ HTTP 403
+                  ↳ DNS 正常
+                  ↳ TLS 正常
+                  ↳ 疑似 Cloudflare Challenge / WAF
+                  ↳ 自动保留截图 + Trace
+```
+
+ProdDoctor 不只是做一次存活探测。它更想回答一个真正有用的问题：**生产链路到底坏在哪一层？**
+
+## 它会检查什么
+
+- DNS 是否能够解析
+- 真实生产 URL 与最终 HTTP 状态
+- 页面是否包含指定关键文本，避免“200 但页面错了”
+- 重定向后的最终 URL
+- Cloudflare Challenge / WAF 常见阻断特征
+- TLS 证书链与剩余有效期
+- 同源 JS / CSS 是否 404、5xx 或错误返回 HTML
+- 可选 Playwright + Chromium 真浏览器渲染检查
+- 未捕获 JavaScript 异常、关键同源请求失败和渲染后文本校验
+- 浏览器整页截图、Playwright Trace 和统一 Evidence Artifact
+- 独立 HTML / JSON Production Report
+- desktop / mobile 两种浏览器视口预设
+- `CF-Ray`、`CF-Cache-Status` 和 Server 响应信息
+- `robots.txt` 与 `sitemap.xml`
+- 常见安全响应头
+- 请求耗时、失败重试、JSON 输出
+- GitHub Actions Job Summary
+
+> v1.4.1 默认仍保持轻量 HTTP 检查；需要时可以启用 Playwright + Chromium 浏览器模式。浏览器模式现在还可以生成移动端证据、失败 Trace、整页截图，以及独立的 HTML / JSON Production Report。
+
 
 ## 版本与稳定性
 
@@ -33,16 +96,7 @@ ProdDoctor 在部署完成后直接检查用户真正访问到的生产环境。
 - 具体版本 tag（例如 `v1.4.1`）发布后禁止移动；补丁修复应发布新的 patch 版本，例如 `v1.4.2`。
 - 可维护浮动 major tag（例如 `v1`）指向当前 1.x 最新发布，但它会移动，不适合要求严格可复现的生产流水线。
 
-## 30 秒接入
 
-```yaml
-- uses: lucaswenbo/ProdDoctor@v1.4.1
-  with:
-    url: https://example.com
-    expect: My Website
-```
-
-不需要 Cloudflare API Token，也不需要修改你的部署平台配置。
 
 ## 如何锁定版本
 
@@ -69,36 +123,6 @@ git rev-list -n 1 v1.4.1
 ```
 
 得到该 tag 对应的完整 commit SHA 后，再替换 Workflow 里的占位符。
-
-### 一个典型故障
-
-<p align="center">
-  <img src=".github/assets/proddoctor-demo.svg" alt="ProdDoctor detects a real production-domain failure after CI passes" width="100%">
-</p>
-
-上面的场景里，构建、部署和平台地址都正常，但真实生产域名返回 Cloudflare 403。ProdDoctor 不会只给出一个笼统的失败：它会显示 DNS 正常、HTTP 403，并把 Cloudflare Challenge / WAF 标为更可能的故障层，从而把排查范围缩小到边缘 / 安全层，同时保留报告证据供后续调试。
-
-## 它会检查什么
-
-- DNS 是否能够解析
-- 真实生产 URL 与最终 HTTP 状态
-- 页面是否包含指定关键文本，避免“200 但页面错了”
-- 重定向后的最终 URL
-- Cloudflare Challenge / WAF 常见阻断特征
-- TLS 证书链与剩余有效期
-- 同源 JS / CSS 是否 404、5xx 或错误返回 HTML
-- 可选 Playwright + Chromium 真浏览器渲染检查
-- 未捕获 JavaScript 异常、关键同源请求失败和渲染后文本校验
-- 浏览器整页截图、Playwright Trace 和统一 Evidence Artifact
-- 独立 HTML / JSON Production Report
-- desktop / mobile 两种浏览器视口预设
-- `CF-Ray`、`CF-Cache-Status` 和 Server 响应信息
-- `robots.txt` 与 `sitemap.xml`
-- 常见安全响应头
-- 请求耗时、失败重试、JSON 输出
-- GitHub Actions Job Summary
-
-> v1.4.1 默认仍保持轻量 HTTP 检查；需要时可以启用 Playwright + Chromium 浏览器模式。浏览器模式现在还可以生成移动端证据、失败 Trace、整页截图，以及独立的 HTML / JSON Production Report。
 
 ---
 
@@ -518,6 +542,7 @@ ProdDoctor 按 SemVer 管理对外行为，并尽量让已有 Workflow 在升级
 | `check_assets` | 否 | `true` | 检查同源 JS/CSS |
 | `max_assets` | 否 | `20` | 最多检查的同源 JS/CSS 数量 |
 | `tls_warn_days` | 否 | `14` | TLS 剩余多少天时开始提示 |
+| `language` | 否 | `en` | CLI、Job Summary 与 HTML 报告语言：`en` 或 `zh-CN` |
 | `browser` | 否 | `false` | 启用 Playwright + Chromium |
 | `browser_expect` | 否 | 空 | 渲染后可见文本必须包含的内容 |
 | `browser_timeout` | 否 | `30000` | 浏览器导航超时，毫秒 |
@@ -578,7 +603,7 @@ cd ProdDoctor
 ## 第 3 步：检查网站
 
 ```bash
-node ./bin/proddoctor.mjs https://example.com
+node ./bin/proddoctor.mjs https://example.com --lang zh-CN
 ```
 
 也可以省略协议：

@@ -14,24 +14,22 @@
   <img src=".github/assets/proddoctor-hero.svg" alt="ProdDoctor - post-deploy production validation" width="100%">
 </p>
 
-**Post-deploy production validation that helps show you where production broke.**
+## Your deploy passed. But does production actually work?
 
-ProdDoctor checks the environment users actually reach after deployment. It does not stop at “Build passed” or “Deploy command succeeded”. It validates the real production path across DNS, HTTP, TLS, page content, same-origin assets, Cloudflare/WAF behavior, and optional Chromium runtime checks.
+```text
+CI / build        ✅
+Deploy command    ✅
+Platform URL      ✅
+Production domain ❌
+```
 
-When something fails, ProdDoctor does more than return a red check. It narrows the failure to the likely layer and preserves debugging evidence such as failed requests, screenshots, Playwright traces, and HTML/JSON reports.
+That gap is what ProdDoctor checks.
 
-> **Your deploy passed. ProdDoctor checks whether production actually works and helps show you where it broke.**
+ProdDoctor validates the **real site your users reach after deployment**, then narrows failures across DNS, HTTP, TLS, same-origin assets, Cloudflare/WAF behavior, and optional Chromium runtime checks.
 
-## Version and stability
+When browser mode is enabled, it can also preserve the evidence you normally wish you had after an incident: screenshots, Playwright traces, failed requests, and HTML/JSON reports.
 
-The current public stable release is **v1.4.1**.
-
-- For normal evaluation and first-time integration, use `lucaswenbo/ProdDoctor@v1.4.1`.
-- For production gates, pin the Action to the **full commit SHA** behind the release tag.
-- `@main` tracks current development and may change at any time. It is not recommended for production gating.
-- Concrete release tags such as `v1.4.1` are immutable after publication. Fixes should be released as a new patch, for example `v1.4.2`.
-- A floating major tag such as `v1` may point to the latest stable 1.x release, but it moves and is therefore not appropriate for environments that require strict reproducibility.
-- Features may still evolve quickly. Check [CHANGELOG.md](CHANGELOG.md) before upgrading.
+> **Green CI proves the pipeline ran. ProdDoctor checks whether production actually works.**
 
 ## 30-second setup
 
@@ -42,31 +40,7 @@ The current public stable release is **v1.4.1**.
     expect: My Website
 ```
 
-No Cloudflare API token is required, and you do not need to modify your deployment platform configuration.
-
-## How to pin a version
-
-| Reference | Best for | Stability |
-|---|---|---|
-| `lucaswenbo/ProdDoctor@main` | Development, experimentation, latest code | Moves with `main`; not recommended for production gates |
-| `lucaswenbo/ProdDoctor@v1.4.1` | Recommended starting point | Concrete release tag; immutable by project policy |
-| `lucaswenbo/ProdDoctor@<commit-sha>` | Production and reproducible CI | Most stable; pins one exact commit |
-
-For production:
-
-```yaml
-- uses: lucaswenbo/ProdDoctor@<commit-sha>
-  with:
-    url: https://example.com
-```
-
-Do not copy `<commit-sha>` literally. Open the GitHub Release or tag page for `v1.4.1`, follow it to the corresponding commit, and copy the full SHA. If you have the tag locally, you can also run:
-
-```bash
-git rev-list -n 1 v1.4.1
-```
-
-Then replace the placeholder in your workflow.
+No Cloudflare API token. No deployment-platform reconfiguration. Human-readable output defaults to English; use `language: zh-CN` for Chinese.
 
 ### A typical production failure
 
@@ -74,7 +48,18 @@ Then replace the placeholder in your workflow.
   <img src=".github/assets/proddoctor-demo.svg" alt="ProdDoctor detects a real production-domain failure after CI passes" width="100%">
 </p>
 
-In the example above, the build, deployment, and platform URL all pass, but the real production domain returns a Cloudflare 403. ProdDoctor does not report only a generic failure: DNS is healthy, HTTP fails with 403, and Cloudflare Challenge / WAF is flagged as the likely failure layer. It then keeps report evidence for debugging before users have to report the outage first.
+```text
+Build            ✅
+Deployment       ✅
+Platform URL     ✅
+Production URL   ❌ HTTP 403
+                  ↳ DNS healthy
+                  ↳ TLS healthy
+                  ↳ likely Cloudflare Challenge / WAF
+                  ↳ screenshot + trace preserved
+```
+
+ProdDoctor is not just an uptime ping. It is intended to answer the more useful question: **which layer of the production path broke?**
 
 ## What ProdDoctor checks
 
@@ -102,6 +87,44 @@ In the example above, the build, deployment, and platform URL all pass, but the 
 - GitHub Actions Job Summary
 
 > v1.4.1 keeps lightweight HTTP validation as the default. Enable browser mode only when you need real Chromium execution, mobile evidence, screenshots, traces, or rendered-page assertions.
+
+
+## Version and stability
+
+The current public stable release is **v1.4.1**.
+
+- For normal evaluation and first-time integration, use `lucaswenbo/ProdDoctor@v1.4.1`.
+- For production gates, pin the Action to the **full commit SHA** behind the release tag.
+- `@main` tracks current development and may change at any time. It is not recommended for production gating.
+- Concrete release tags such as `v1.4.1` are immutable after publication. Fixes should be released as a new patch, for example `v1.4.2`.
+- A floating major tag such as `v1` may point to the latest stable 1.x release, but it moves and is therefore not appropriate for environments that require strict reproducibility.
+- Features may still evolve quickly. Check [CHANGELOG.md](CHANGELOG.md) before upgrading.
+
+
+
+## How to pin a version
+
+| Reference | Best for | Stability |
+|---|---|---|
+| `lucaswenbo/ProdDoctor@main` | Development, experimentation, latest code | Moves with `main`; not recommended for production gates |
+| `lucaswenbo/ProdDoctor@v1.4.1` | Recommended starting point | Concrete release tag; immutable by project policy |
+| `lucaswenbo/ProdDoctor@<commit-sha>` | Production and reproducible CI | Most stable; pins one exact commit |
+
+For production:
+
+```yaml
+- uses: lucaswenbo/ProdDoctor@<commit-sha>
+  with:
+    url: https://example.com
+```
+
+Do not copy `<commit-sha>` literally. Open the GitHub Release or tag page for `v1.4.1`, follow it to the corresponding commit, and copy the full SHA. If you have the tag locally, you can also run:
+
+```bash
+git rev-list -n 1 v1.4.1
+```
+
+Then replace the placeholder in your workflow.
 
 ---
 
@@ -155,18 +178,18 @@ ProdDoctor will access your production site directly from the GitHub-hosted runn
 
 A successful run stays green and ProdDoctor writes a summary to the GitHub Actions Job Summary.
 
-The current CLI/report output is primarily Chinese. A typical successful result looks like:
+Human-readable output defaults to English. Set `language: zh-CN` in the Action or `--lang zh-CN` in the CLI for Chinese. A typical successful result looks like:
 
 ```text
-🩺 ProdDoctor 生产环境体检
-目标：https://example.com/
-结果：✅ 通过
+🩺 ProdDoctor production check
+Target: https://example.com/
+Result: ✅ PASS
 
-✅ DNS：93.184.216.34
-✅ 页面：200，143ms，尝试 1 次
-⚠️ robots.txt：HTTP 404
-✅ sitemap.xml：HTTP 200
-🛡️ 安全响应头：60/100
+✅ DNS: 93.184.216.34
+✅ Page: 200, 143ms, 1 attempt
+⚠️ robots.txt: HTTP 404
+✅ sitemap.xml: HTTP 200
+🛡️ Security headers: 60/100
 ```
 
 ---
@@ -463,6 +486,7 @@ ProdDoctor follows SemVer and tries to keep existing workflows behaving as origi
 | `check_assets` | No | `true` | Validate same-origin JS/CSS |
 | `max_assets` | No | `20` | Maximum number of same-origin JS/CSS assets |
 | `tls_warn_days` | No | `14` | Warn when the certificate has this many days remaining |
+| `language` | No | `en` | Human-readable CLI, Job Summary, and HTML report language: `en` or `zh-CN` |
 | `browser` | No | `false` | Enable Playwright + Chromium |
 | `browser_expect` | No | Empty | Rendered visible text must contain this value |
 | `browser_timeout` | No | `30000` | Browser navigation timeout in milliseconds |
@@ -514,6 +538,12 @@ cd ProdDoctor
 
 ```bash
 node ./bin/proddoctor.mjs https://example.com
+```
+
+Chinese human-readable output:
+
+```bash
+node ./bin/proddoctor.mjs https://example.com --lang zh-CN
 ```
 
 You can omit the protocol:
