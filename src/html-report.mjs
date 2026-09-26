@@ -39,7 +39,7 @@ function relativeEvidenceLink(filePath, reportPath) {
 }
 
 export function toHtmlReport(result, options = {}) {
-  const language = normalizeLanguage(options.language || 'zh-CN');
+  const language = normalizeLanguage(options.language || 'en');
   const zh = language === 'zh-CN';
   const browser = result.browser;
   const screenshotName = relativeEvidenceLink(browser?.screenshotPath, options.reportPath);
@@ -58,7 +58,7 @@ export function toHtmlReport(result, options = {}) {
       : (zh ? '未检查' : 'Not checked')),
     row(zh ? '同源 JS/CSS' : 'Same-origin JS/CSS', !result.assets.checked || result.assets.ok, result.assets.checked
       ? (zh ? `${result.assets.count} 个，失败 ${result.assets.failedCount} 个` : `${result.assets.count} checked, ${result.assets.failedCount} failed`)
-      : result.assets.reason || (zh ? '未启用' : 'Disabled')),
+      : localizeDiagnostic(result.assets.reason || (zh ? '未启用静态资源检查' : 'Static asset checks disabled'), language)),
     row(zh ? '浏览器' : 'Browser', !browser.checked || browser.ok, browser.checked
       ? `${browser.profile} · HTTP ${browser.mainStatus ?? noResponse} · ${browser.viewport?.width ?? '?'}×${browser.viewport?.height ?? '?'}`
       : (zh ? '未启用' : 'Disabled')),
