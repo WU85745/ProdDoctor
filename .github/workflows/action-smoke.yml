@@ -36,6 +36,7 @@ jobs:
         uses: ./
         with:
           url: https://example.com
+          language: en
           retries: 1
           timeout: 15000
 
