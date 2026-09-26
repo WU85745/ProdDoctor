@@ -136,7 +136,7 @@ test('failure reports include one human-readable likely cause without claiming b
   assert.match(english, /Likely cause: Cloudflare Challenge \/ WAF is blocking the real production request\./);
   assert.match(chinese, /可能原因：Cloudflare Challenge \/ WAF 正在阻断真实生产请求。/);
   assert.match(markdown, /\*\*Likely cause:\*\* Cloudflare Challenge \/ WAF is blocking the real production request\./);
-  assert.match(html, /<strong>Likely cause:<\/strong> Cloudflare Challenge \/ WAF is blocking the real production request\./);
+  assert.match(html, /<p>Likely cause: Cloudflare Challenge \/ WAF is blocking the real production request\.<\/p>/);
   assert.doesNotMatch(english, /build (passed|failed|healthy)/i);
 });
 
