@@ -39,7 +39,7 @@ ProdDoctor 会在部署之后继续检查**用户真正访问到的那条生产�
     language: zh-CN
 ```
 
-中文 README 的示例显式使用 `language: zh-CN`。默认人类可读输出语言为英文。
+为兼容旧版本，人类可读输出默认仍为中文；英文用户可以设置 `language: en`。
 
 不需要 Cloudflare API Token，也不需要修改你的部署平台配置。
 
@@ -534,7 +534,7 @@ ProdDoctor 按 SemVer 管理对外行为，并尽量让已有 Workflow 在升级
 | 参数 | 是否必须 | 默认值 | 作用 |
 |---|---|---|---|
 | `url` | 是 | 无 | 要检查的正式 URL |
-| `language` | 否 | `en` | 人类可读输出语言：`en` 或 `zh-CN` |
+| `language` | 否 | `zh-CN` | 人类可读输出语言：`en` 或 `zh-CN` |
 | `expect` | 否 | 空 | 原始 HTML 必须包含的文本 |
 | `status` | 否 | 空 | 最终 HTTP 状态必须精确匹配 |
 | `retries` | 否 | GitHub Action：`2`；CLI：`1` | 失败后额外重试次数 |
@@ -575,7 +575,7 @@ retries: 2
 
 # 方法二：在电脑上直接运行
 
-默认 HTTP 模式没有第三方 npm 运行时依赖，因此不需要先执行 `npm install`。浏览器模式需要 Playwright；在 GitHub Action 中会自动安装，本地使用时需要手动安装。CLI 默认输出英文，需要中文时加 `--lang zh-CN`。
+默认 HTTP 模式没有第三方 npm 运行时依赖，因此不需要先执行 `npm install`。浏览器模式需要 Playwright；在 GitHub Action 中会自动安装，本地使用时需要手动安装。CLI 默认仍输出中文；需要英文时加 `--lang en`。
 
 ## 第 1 步：确认 Node.js 版本
 
