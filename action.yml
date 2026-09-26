@@ -78,6 +78,10 @@ inputs:
     description: 'Generate JSON and HTML production reports during browser validation'
     required: false
     default: 'true'
+  language:
+    description: 'Human-readable output language: zh-CN or en'
+    required: false
+    default: 'zh-CN'
 
 outputs:
   evidence_dir:
@@ -106,6 +110,7 @@ runs:
         PROD_DOCTOR_BROWSER_EXPECT: ${{ inputs.browser_expect }}
         PROD_DOCTOR_BROWSER_PROFILE: ${{ inputs.browser_profile }}
         PROD_DOCTOR_BROWSER_TRACE: ${{ inputs.browser_trace }}
+        PROD_DOCTOR_LANGUAGE: ${{ inputs.language }}
       run: |
         for value in           "$PROD_DOCTOR_CHECK_ASSETS"           "$PROD_DOCTOR_BROWSER"           "$PROD_DOCTOR_BROWSER_FAIL_CONSOLE"           "$PROD_DOCTOR_UPLOAD_SCREENSHOT"           "$PROD_DOCTOR_UPLOAD_REPORT"; do
           case "$value" in
@@ -129,6 +134,14 @@ runs:
           off|on-failure|always) ;;
           *)
             echo "browser_trace 只接受 off、on-failure 或 always"
+            exit 2
+            ;;
+        esac
+
+        case "$PROD_DOCTOR_LANGUAGE" in
+          zh-CN|en) ;;
+          *)
+            echo "language only accepts zh-CN or en"
             exit 2
             ;;
         esac
@@ -185,6 +198,7 @@ runs:
         PROD_DOCTOR_BROWSER_TRACE: ${{ inputs.browser_trace }}
         PROD_DOCTOR_UPLOAD_SCREENSHOT: ${{ inputs.upload_screenshot }}
         PROD_DOCTOR_UPLOAD_REPORT: ${{ inputs.upload_report }}
+        PROD_DOCTOR_LANG: ${{ inputs.language }}
         PROD_DOCTOR_EVIDENCE_DIR: ${{ steps.evidence.outputs.dir }}
       run: |
         args=(
