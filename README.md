@@ -36,17 +36,12 @@ It validates DNS, HTTP, TLS, expected page content, same-origin assets, Cloudfla
   with:
     url: https://example.com
     expect: My Website
+    language: en
 ```
 
 No Cloudflare API token is required, and you do not need to modify your deployment platform configuration.
 
-Human-readable Action output defaults to **English**. For Chinese output:
-
-```yaml
-with:
-  url: https://example.com
-  language: zh-CN
-```
+ProdDoctor keeps **Chinese** as the default human-readable language for backward compatibility. English users should set `language: en` as shown above. Use `language: zh-CN` when you want Chinese output.
 
 ### A typical production failure
 
@@ -133,6 +128,7 @@ jobs:
       - uses: lucaswenbo/ProdDoctor@v1.4.1
         with:
           url: https://example.com
+          language: en
 ```
 
 Replace `https://example.com` with your real production URL.
@@ -483,7 +479,7 @@ ProdDoctor follows SemVer and tries to keep existing workflows behaving as origi
 | Input | Required | Default | Purpose |
 |---|---|---|---|
 | `url` | Yes | None | Production URL to validate |
-| `language` | No | `en` | Human-readable output language: `en` or `zh-CN` |
+| `language` | No | `zh-CN` | Human-readable output language: `en` or `zh-CN` |
 | `expect` | No | Empty | Raw HTML must contain this text |
 | `status` | No | Empty | Final HTTP status must exactly match |
 | `retries` | No | Action: `2`; CLI: `1` | Additional retries after failure |
@@ -522,7 +518,7 @@ This helps when a CDN or edge deployment needs a short propagation window.
 
 # Method 2: run locally
 
-The default HTTP mode has no third-party npm runtime dependencies. Browser mode requires Playwright. Human-readable CLI output defaults to English; add `--lang zh-CN` when you want Chinese terminal and HTML output.
+The default HTTP mode has no third-party npm runtime dependencies. Browser mode requires Playwright. Human-readable CLI output remains Chinese by default for compatibility; add `--lang en` for English terminal, Job Summary, and HTML report output.
 
 ## Step 1: Node.js
 
