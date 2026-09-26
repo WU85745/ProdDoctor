@@ -5,7 +5,7 @@ import { toHtmlReport } from '../src/html-report.mjs';
 function sampleResult() {
   return {
     ok: false,
-    version: '2.0.0',
+    version: '2.0.1',
     target: 'https://example.com/?q=<script>',
     checkedAt: '2026-09-25T00:00:00.000Z',
     dns: {
