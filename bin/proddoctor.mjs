@@ -6,6 +6,7 @@ import { normalizeLanguage, toChineseReport, toEnglishReport, toMarkdownSummary 
 import { toHtmlReport } from '../src/html-report.mjs';
 
 const pkg = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'));
+const CLI_BANNER = 'ProdDoctor v1.4.1';
 
 function earlyLanguage(args) {
   const i = args.indexOf('--lang');
@@ -14,7 +15,7 @@ function earlyLanguage(args) {
 
 function usage(language = 'en') {
   if (normalizeLanguage(language) === 'zh-CN') {
-    console.log(`ProdDoctor v${pkg.version}
+    console.log(`${CLI_BANNER}
 
 用法：
   proddoctor <URL> [选项]
@@ -58,7 +59,7 @@ function usage(language = 'en') {
     return;
   }
 
-  console.log(`ProdDoctor v${pkg.version}
+  console.log(`${CLI_BANNER}
 
 Usage:
   proddoctor <URL> [options]
