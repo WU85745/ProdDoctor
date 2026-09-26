@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { localizeDiagnostic, normalizeLanguage } from './report.mjs';
+import { likelyCause, localizeDiagnostic, normalizeLanguage } from './report.mjs';
 
 function esc(value) {
   return String(value ?? '')
@@ -46,6 +46,7 @@ export function toHtmlReport(result, options = {}) {
   const traceName = relativeEvidenceLink(browser?.tracePath, options.reportPath);
   const noResponse = zh ? '无响应' : 'no response';
   const empty = zh ? '无' : 'None';
+  const cause = likelyCause(result, language);
 
   const rows = [
     row('DNS', result.dns.ok, result.dns.ok
@@ -151,6 +152,7 @@ export function toHtmlReport(result, options = {}) {
     <div class="summary">
       <strong class="${result.ok ? 'ok-text' : 'bad-text'}">${result.ok ? 'PASS' : 'FAIL'}</strong>
       <div class="muted">ProdDoctor v${esc(result.version)}</div>
+      ${cause ? `<p><strong>${zh ? '可能原因' : 'Likely cause'}:</strong> ${esc(cause)}</p>` : ''}
     </div>
 
     <section>
