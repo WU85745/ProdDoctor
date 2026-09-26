@@ -101,6 +101,31 @@ The current public stable release is **v1.4.1**.
 - Features may still evolve quickly. Check [CHANGELOG.md](CHANGELOG.md) before upgrading.
 
 
+
+## How to pin a version
+
+| Reference | Best for | Stability |
+|---|---|---|
+| `lucaswenbo/ProdDoctor@main` | Development, experimentation, latest code | Moves with `main`; not recommended for production gates |
+| `lucaswenbo/ProdDoctor@v1.4.1` | Recommended starting point | Concrete release tag; immutable by project policy |
+| `lucaswenbo/ProdDoctor@<commit-sha>` | Production and reproducible CI | Most stable; pins one exact commit |
+
+For production:
+
+```yaml
+- uses: lucaswenbo/ProdDoctor@<commit-sha>
+  with:
+    url: https://example.com
+```
+
+Do not copy `<commit-sha>` literally. Open the GitHub Release or tag page for `v1.4.1`, follow it to the corresponding commit, and copy the full SHA. If you have the tag locally, you can also run:
+
+```bash
+git rev-list -n 1 v1.4.1
+```
+
+Then replace the placeholder in your workflow.
+
 ---
 
 # Method 1: GitHub Actions
