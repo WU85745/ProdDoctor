@@ -10,11 +10,11 @@ const CLI_BANNER = 'ProdDoctor v1.5.0';
 
 function earlyLanguage(args) {
   const i = args.indexOf('--lang');
-  if (i === -1) return 'zh-CN';
-  return args[i + 1] === 'en' ? 'en' : 'zh-CN';
+  if (i === -1) return 'en';
+  return args[i + 1] === 'zh-CN' ? 'zh-CN' : 'en';
 }
 
-function usage(language = 'zh-CN') {
+function usage(language = 'en') {
   if (normalizeLanguage(language) === 'zh-CN') {
     console.log(`${CLI_BANNER}
 
@@ -43,7 +43,7 @@ function usage(language = 'zh-CN') {
   --browser-trace-path <路径>  Trace ZIP 保存路径
 
 输出：
-  --lang <语言>                输出语言：en 或 zh-CN，默认 zh-CN
+  --lang <语言>                输出语言：en 或 zh-CN，默认 en
   --json                       输出 JSON
   --json-file <路径>           保存 JSON 报告
   --html-report <路径>         保存独立 HTML 报告
@@ -87,7 +87,7 @@ Browser checks:
   --browser-trace-path <path>   Save Playwright Trace ZIP
 
 Output:
-  --lang <language>             Output language: en or zh-CN, default zh-CN
+  --lang <language>             Output language: en or zh-CN, default en
   --json                        Print JSON
   --json-file <path>            Save JSON report
   --html-report <path>          Save standalone HTML report
@@ -162,7 +162,7 @@ try {
     }
   }
 
-  const language = value('--lang', 'zh-CN');
+  const language = value('--lang', 'en');
   if (!['en', 'zh-CN'].includes(language)) {
     throw new Error(fallbackLanguage === 'zh-CN' ? '--lang 只支持 en 或 zh-CN' : '--lang supports only en or zh-CN');
   }
