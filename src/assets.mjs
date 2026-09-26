@@ -83,7 +83,7 @@ async function requestAsset(asset, timeoutMs) {
       method: 'GET',
       redirect: 'follow',
       headers: {
-        'user-agent': 'ProdDoctor/2.1.0 (+https://github.com/lucaswenbo/ProdDoctor)',
+        'user-agent': 'ProdDoctor/2.1.1 (+https://github.com/lucaswenbo/ProdDoctor)',
         'cache-control': 'no-cache',
         range: 'bytes=0-0'
       },

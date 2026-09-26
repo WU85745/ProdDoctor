@@ -2,6 +2,13 @@
 
 所有值得记录的变更都集中在这里。格式遵循 Keep a Changelog 的组织方式，版本号遵循 SemVer。
 
+## [2.1.1](https://github.com/lucaswenbo/ProdDoctor/compare/v2.1.0...v2.1.1) (2026-09-26)
+
+
+### Bug Fixes
+
+* prioritize request failures over content mismatch ([4674e54](https://github.com/lucaswenbo/ProdDoctor/commit/4674e54726573f945d30dce7c2140737118ba971))
+
 ## [2.1.0](https://github.com/lucaswenbo/ProdDoctor/compare/v2.0.1...v2.1.0) (2026-09-26)
 
 
