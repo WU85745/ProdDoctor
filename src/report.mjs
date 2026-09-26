@@ -16,7 +16,8 @@ function translateBrowserDiagnostic(text) {
     [/^浏览器 Console 出现 (\d+) 条 error（当前仅提示）$/, 'Browser console reported $1 error(s) (warning only)'],
     [/^页面渲染后 body 可见文本为空$/, 'Visible body text is empty after rendering'],
     [/^截图保存失败：(.*)$/, 'Failed to save screenshot: $1'],
-    [/^Trace 保存失败：(.*)$/, 'Failed to save trace: $1']
+    [/^Trace 保存失败：(.*)$/, 'Failed to save trace: $1'],
+    [/^浏览器检查无法完成$/, 'Browser check could not complete']
   ];
   for (const [pattern, replacement] of rules) {
     if (pattern.test(text)) return text.replace(pattern, replacement);
